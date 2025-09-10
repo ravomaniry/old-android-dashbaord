@@ -1,3 +1,19 @@
 <resources>
-    <string name="app_name">Android Car dashboard</string>
+    <string name="app_name">Car Dashboard</string>
+    <string name="speed_label">KM/H</string>
+    <string name="rpm_label">RPM</string>
+    <string name="temp_label">°C</string>
+    <string name="fuel_label">%</string>
+    <string name="distance_label">km</string>
+    <string name="fuel_usage_label">L/100km</string>
+    <string name="avg_temp_label">°C</string>
+    <string name="avg_speed_label">km/h</string>
+    <string name="system_status">SYSTEM STATUS</string>
+    <string name="vehicle_status">VEHICLE STATUS</string>
+    <string name="coolant_temp">COOLANT TEMP</string>
+    <string name="fuel_level">FUEL LEVEL</string>
+    <string name="distance">DISTANCE</string>
+    <string name="fuel_use">FUEL USE</string>
+    <string name="avg_temp">AVG TEMP</string>
+    <string name="avg_speed">AVG SPEED</string>
 </resources>

@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:background="#0A0A0A"
+    android:padding="16dp">
+
+    <!-- LEFT COLUMN - Warning and Coolant -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <!-- System Status Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:background="@drawable/status_box_background"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp">
+
+            <!-- System Status Header -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="SYSTEM STATUS"
+                android:textColor="#00BCD4"
+                android:textSize="12sp"
+                android:gravity="center"
+                android:layout_marginBottom="16dp" />
+
+            <!-- System Status Indicators -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <!-- Row 1: Oil Warning and Battery -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:orientation="horizontal">
+
+                    <!-- Oil Warning -->
+                    <com.example.androidcardashboard.StatusIndicatorView
+                        android:id="@+id/oil_warning_indicator"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginRight="4dp" />
+
+                    <!-- Battery -->
+                    <com.example.androidcardashboard.StatusIndicatorView
+                        android:id="@+id/battery_indicator"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginLeft="4dp" />
+
+                </LinearLayout>
+
+                <!-- Row 2: Bluetooth and GPS -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="8dp">
+
+                    <!-- Bluetooth -->
+                    <com.example.androidcardashboard.StatusIndicatorView
+                        android:id="@+id/bluetooth_indicator"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginRight="4dp" />
+
+                    <!-- GPS -->
+                    <com.example.androidcardashboard.StatusIndicatorView
+                        android:id="@+id/gps_indicator"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginLeft="4dp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Coolant Temperature -->
+        <com.example.androidcardashboard.GaugeView
+            android:id="@+id/coolant_gauge"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+    </LinearLayout>
+
+    <!-- MIDDLE COLUMN - Speedometer and Trip Info -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="2"
+        android:orientation="vertical"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp">
+
+        <!-- Speedometer -->
+        <com.example.androidcardashboard.SpeedometerView
+            android:id="@+id/speedometer"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="3" />
+
+        <!-- Trip Details -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="80dp"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <!-- Distance -->
+            <com.example.androidcardashboard.TripDetailView
+                android:id="@+id/distance_detail"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginRight="4dp" />
+
+            <!-- Fuel Usage -->
+            <com.example.androidcardashboard.TripDetailView
+                android:id="@+id/fuel_usage_detail"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginLeft="4dp"
+                android:layout_marginRight="4dp" />
+
+            <!-- Average Temperature -->
+            <com.example.androidcardashboard.TripDetailView
+                android:id="@+id/avg_temp_detail"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginLeft="4dp"
+                android:layout_marginRight="4dp" />
+
+            <!-- Average Speed -->
+            <com.example.androidcardashboard.TripDetailView
+                android:id="@+id/avg_speed_detail"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginLeft="4dp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- RIGHT COLUMN - Vehicle Status and Fuel -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <!-- Vehicle Status Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:background="@drawable/status_box_background"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp">
+
+            <!-- Vehicle Status Header -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="VEHICLE STATUS"
+                android:textColor="#00BCD4"
+                android:textSize="12sp"
+                android:gravity="center"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Vehicle Status Indicators -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <!-- Row 1: HIGH | LOW -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:orientation="horizontal">
+
+                    <!-- High Beam -->
+                    <com.example.androidcardashboard.StatusIndicatorView
+                        android:id="@+id/high_beam_indicator"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginRight="4dp" />
+
+                    <!-- Low Beam -->
+                    <com.example.androidcardashboard.StatusIndicatorView
+                        android:id="@+id/low_beam_indicator"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginLeft="4dp" />
+
+                </LinearLayout>
+
+                <!-- Row 2: DRL | HAZARD -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="8dp">
+
+                    <!-- DRL -->
+                    <com.example.androidcardashboard.StatusIndicatorView
+                        android:id="@+id/drl_indicator"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginRight="4dp" />
+
+                    <!-- Hazard Light -->
+                    <com.example.androidcardashboard.StatusIndicatorView
+                        android:id="@+id/hazard_indicator"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginLeft="4dp" />
+
+                </LinearLayout>
+
+                <!-- Row 3: LEFT | RIGHT -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="8dp">
+
+                    <!-- Left Turn -->
+                    <com.example.androidcardashboard.StatusIndicatorView
+                        android:id="@+id/left_turn_indicator"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginRight="4dp" />
+
+                    <!-- Right Turn -->
+                    <com.example.androidcardashboard.StatusIndicatorView
+                        android:id="@+id/right_turn_indicator"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginLeft="4dp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Fuel Level -->
+        <com.example.androidcardashboard.GaugeView
+            android:id="@+id/fuel_gauge"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+    </LinearLayout>
+
+</LinearLayout>

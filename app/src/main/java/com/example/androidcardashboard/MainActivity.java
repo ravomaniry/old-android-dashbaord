@@ -1,19 +1,609 @@
 package com.example.androidcardashboard;
 
 import android.app.Activity;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.widget.TextView;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.PowerManager;
+import android.view.View;
+import android.view.WindowManager;
+import android.os.Build;
+import java.util.Random;
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements GpsService.GpsDataListener, BluetoothService.BluetoothDataListener {
+    // Dashboard data
+    private double speed = 0.0;
+    private double rpm = 0.0;
+    private double coolantTemp = 82.0;
+    private double fuelLevel = 65.0;
+    private double tripDistance = 0.0;
+    private double fuelUsage = 0.0;
+    private double avgTemperature = 0.0;
+    private double avgSpeed = 0.0;
+    private double batteryVoltage = 12.6;
+    
+    // Status indicators
+    private boolean oilWarning = false;
+    private boolean drlOn = true;
+    private boolean lowBeamOn = false;
+    private boolean highBeamOn = false;
+    private boolean leftTurnSignal = false;
+    private boolean rightTurnSignal = false;
+    private boolean hazardLights = false;
+    private boolean bluetoothConnected = true;
+    private boolean gpsConnected = true;
+    
+    // Custom Views
+    private SpeedometerView speedometer;
+    private GaugeView coolantGauge;
+    private GaugeView fuelGauge;
+    private StatusIndicatorView oilWarningIndicator;
+    private StatusIndicatorView batteryIndicator;
+    private StatusIndicatorView bluetoothIndicator;
+    private StatusIndicatorView gpsIndicator;
+    private StatusIndicatorView drlIndicator;
+    private StatusIndicatorView lowBeamIndicator;
+    private StatusIndicatorView highBeamIndicator;
+    private StatusIndicatorView hazardIndicator;
+    private StatusIndicatorView leftTurnIndicator;
+    private StatusIndicatorView rightTurnIndicator;
+    private TripDetailView distanceDetail;
+    private TripDetailView fuelUsageDetail;
+    private TripDetailView avgTempDetail;
+    private TripDetailView avgSpeedDetail;
+    
+    private Handler handler = new Handler(Looper.getMainLooper());
+    private Random random = new Random();
+    private boolean demoMode = false;
+    
+    // Demo and theme button visibility
+    private boolean showDemoButton = false;
+    private boolean showThemeButton = false;
+    private Handler buttonHideHandler = new Handler(Looper.getMainLooper());
+    private Runnable hideButtonsRunnable;
+    
+    // Services
+    private GpsService gpsService;
+    private BluetoothService bluetoothService;
+    private ThemeManager themeManager;
+    private PowerManager.WakeLock wakeLock;
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        TextView textView = new TextView(this);
-        textView.setText("Hello Android!");
-        textView.setTextSize(18);
-        textView.setPadding(32, 32, 32, 32);
+        // Enable fullscreen mode
+        setupFullscreen();
         
-        setContentView(textView);
+        setContentView(R.layout.activity_main_simple);
+        
+        initializeViews();
+        setupTouchListeners();
+        initializeServices();
+        startDataSimulation();
+        startFullscreenEnforcer();
+    }
+    
+    private void initializeViews() {
+        // Custom Views
+        speedometer = (SpeedometerView) findViewById(R.id.speedometer);
+        coolantGauge = (GaugeView) findViewById(R.id.coolant_gauge);
+        fuelGauge = (GaugeView) findViewById(R.id.fuel_gauge);
+        
+        // Status indicators
+        oilWarningIndicator = (StatusIndicatorView) findViewById(R.id.oil_warning_indicator);
+        batteryIndicator = (StatusIndicatorView) findViewById(R.id.battery_indicator);
+        bluetoothIndicator = (StatusIndicatorView) findViewById(R.id.bluetooth_indicator);
+        gpsIndicator = (StatusIndicatorView) findViewById(R.id.gps_indicator);
+        drlIndicator = (StatusIndicatorView) findViewById(R.id.drl_indicator);
+        lowBeamIndicator = (StatusIndicatorView) findViewById(R.id.low_beam_indicator);
+        highBeamIndicator = (StatusIndicatorView) findViewById(R.id.high_beam_indicator);
+        hazardIndicator = (StatusIndicatorView) findViewById(R.id.hazard_indicator);
+        leftTurnIndicator = (StatusIndicatorView) findViewById(R.id.left_turn_indicator);
+        rightTurnIndicator = (StatusIndicatorView) findViewById(R.id.right_turn_indicator);
+        
+        // Trip details
+        distanceDetail = (TripDetailView) findViewById(R.id.distance_detail);
+        fuelUsageDetail = (TripDetailView) findViewById(R.id.fuel_usage_detail);
+        avgTempDetail = (TripDetailView) findViewById(R.id.avg_temp_detail);
+        avgSpeedDetail = (TripDetailView) findViewById(R.id.avg_speed_detail);
+        
+        // Initialize gauge ranges and labels
+        coolantGauge.setRange(60, 120);
+        coolantGauge.setUnit("°C");
+        coolantGauge.setLabel("TEMP");
+        coolantGauge.setGaugeType(GaugeView.GaugeType.TEMPERATURE);
+        
+        fuelGauge.setRange(0, 100);
+        fuelGauge.setUnit("%");
+        fuelGauge.setLabel("FUEL");
+        fuelGauge.setGaugeType(GaugeView.GaugeType.FUEL);
+        
+        
+        // Initialize status indicator labels
+        oilWarningIndicator.setLabel("OIL");
+        batteryIndicator.setLabel("BATTERY");
+        bluetoothIndicator.setLabel("BLUETOOTH");
+        gpsIndicator.setLabel("GPS");
+        drlIndicator.setLabel("DRL");
+        lowBeamIndicator.setLabel("LOW BEAM");
+        highBeamIndicator.setLabel("HIGH BEAM");
+        hazardIndicator.setLabel("HAZARD");
+        leftTurnIndicator.setLabel("LEFT TURN");
+        rightTurnIndicator.setLabel("RIGHT TURN");
+        
+        // Force text size update for all indicators
+        oilWarningIndicator.updateTextSize();
+        batteryIndicator.updateTextSize();
+        bluetoothIndicator.updateTextSize();
+        gpsIndicator.updateTextSize();
+        drlIndicator.updateTextSize();
+        lowBeamIndicator.updateTextSize();
+        highBeamIndicator.updateTextSize();
+        hazardIndicator.updateTextSize();
+        leftTurnIndicator.updateTextSize();
+        rightTurnIndicator.updateTextSize();
+        
+        // Initialize trip detail labels
+        distanceDetail.setLabel("DISTANCE");
+        fuelUsageDetail.setLabel("FUEL USE");
+        avgTempDetail.setLabel("AVG TEMP");
+        avgSpeedDetail.setLabel("AVG SPEED");
+        
+        // Set up speedometer button click listener
+        speedometer.setButtonClickListener(new SpeedometerView.OnButtonClickListener() {
+            @Override
+            public void onDemoButtonClick() {
+                MainActivity.this.onDemoButtonClick();
+            }
+            
+            @Override
+            public void onThemeButtonClick() {
+                MainActivity.this.onThemeButtonClick();
+            }
+        });
+    }
+    
+    private void initializeServices() {
+        // Initialize theme manager
+        themeManager = new ThemeManager();
+        
+        // Initialize GPS service
+        gpsService = new GpsService(this);
+        gpsService.setDataListener(this);
+        
+        // Initialize Bluetooth service
+        bluetoothService = new BluetoothService(this);
+        bluetoothService.setDataListener(this);
+    }
+    
+    private void startDataSimulation() {
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                updateDashboardData();
+                updateUI();
+                handler.postDelayed(this, 1000); // Update every second
+            }
+        });
+    }
+    
+    private void updateDashboardData() {
+        if (demoMode) {
+            // Simulate realistic car data only if no real data is available
+            if (!gpsService.isTracking()) {
+                speed = Math.max(0, speed + (random.nextDouble() - 0.5) * 10);
+                speed = Math.min(120, speed);
+                
+                tripDistance += speed / 3600; // km per second
+                avgSpeed = speed * 0.8 + random.nextDouble() * 10;
+            }
+            
+            if (!bluetoothService.isConnected()) {
+                rpm = speed * 100 + random.nextDouble() * 500;
+                rpm = Math.max(800, Math.min(6000, rpm));
+                
+                coolantTemp = 80 + random.nextDouble() * 20;
+                coolantTemp = Math.max(75, Math.min(105, coolantTemp));
+                
+                fuelLevel = Math.max(0, fuelLevel - random.nextDouble() * 0.1);
+                
+                // Simulate status changes
+                if (random.nextDouble() < 0.1) {
+                    oilWarning = !oilWarning;
+                }
+                
+                batteryVoltage = 12.0 + random.nextDouble() * 2.0;
+                
+                // Simulate turn signals
+                if (random.nextDouble() < 0.05) {
+                    leftTurnSignal = !leftTurnSignal;
+                }
+                if (random.nextDouble() < 0.05) {
+                    rightTurnSignal = !rightTurnSignal;
+                }
+            }
+            
+            fuelUsage = 5.5 + random.nextDouble() * 2.0;
+            avgTemperature = 20 + random.nextDouble() * 10;
+        }
+    }
+    
+    private void updateUI() {
+        // Update speedometer
+        speedometer.setSpeed((float) speed);
+        speedometer.setRpm((float) rpm);
+        
+        // Update gauges
+        coolantGauge.setValue((float) coolantTemp);
+        fuelGauge.setValue((float) fuelLevel);
+        
+        // Update trip details
+        distanceDetail.setValue(String.format("%.1f km", tripDistance));
+        fuelUsageDetail.setValue(String.format("%.1f L/100km", fuelUsage));
+        avgTempDetail.setValue(String.format("%.0f°C", avgTemperature));
+        avgSpeedDetail.setValue(String.format("%.1f km/h", avgSpeed));
+        
+        // Update status indicators
+        oilWarningIndicator.setActive(oilWarning);
+        updateBatteryIndicator();
+        bluetoothIndicator.setActive(bluetoothConnected);
+        gpsIndicator.setActive(gpsConnected);
+        drlIndicator.setActive(drlOn);
+        lowBeamIndicator.setActive(lowBeamOn);
+        highBeamIndicator.setActive(highBeamOn);
+        hazardIndicator.setActive(hazardLights);
+        hazardIndicator.setBlinking(hazardLights);
+        leftTurnIndicator.setActive(leftTurnSignal);
+        leftTurnIndicator.setBlinking(leftTurnSignal);
+        rightTurnIndicator.setActive(rightTurnSignal);
+        rightTurnIndicator.setBlinking(rightTurnSignal);
+    }
+    
+    private void updateBatteryIndicator() {
+        if (batteryVoltage < 11.5) {
+            batteryIndicator.setActiveColor(0xFFF44336); // Red
+        } else if (batteryVoltage < 12.2) {
+            batteryIndicator.setActiveColor(0xFFFF9800); // Orange
+        } else {
+            batteryIndicator.setActiveColor(0xFF4CAF50); // Green
+        }
+        batteryIndicator.setActive(true);
+    }
+    
+    private void updateTheme() {
+        // Update colors based on current theme
+        int primaryColor = themeManager.getPrimaryAccentColor();
+        int secondaryColor = themeManager.getSecondaryAccentColor();
+        int backgroundColor = themeManager.getBackgroundColor();
+        int containerColor = themeManager.getContainerColor();
+        
+        // Debug: Log theme change
+        android.util.Log.d("ThemeManager", "Theme changed to: " + themeManager.getThemeName());
+        
+        // Update status indicator colors
+        oilWarningIndicator.setActiveColor(themeManager.getDangerColor());
+        batteryIndicator.setActiveColor(themeManager.getSuccessColor());
+        bluetoothIndicator.setActiveColor(primaryColor);
+        gpsIndicator.setActiveColor(primaryColor);
+        
+        drlIndicator.setActiveColor(secondaryColor);
+        lowBeamIndicator.setActiveColor(secondaryColor);
+        highBeamIndicator.setActiveColor(secondaryColor);
+        hazardIndicator.setActiveColor(themeManager.getWarningColor());
+        leftTurnIndicator.setActiveColor(themeManager.getWarningColor());
+        rightTurnIndicator.setActiveColor(themeManager.getWarningColor());
+        
+        // Update background colors
+        findViewById(android.R.id.content).setBackgroundColor(backgroundColor);
+        
+        // Update custom views with new theme colors
+        if (speedometer != null) {
+            speedometer.setThemeColors(primaryColor, secondaryColor, backgroundColor);
+        }
+        // Note: GaugeView setThemeColors method will be added later
+        
+        // Force UI update
+        updateUI();
+    }
+    
+    private void setupFullscreen() {
+        // Hide the action bar
+        if (getActionBar() != null) {
+            getActionBar().hide();
+        }
+        
+        // Set fullscreen flags - more comprehensive approach
+        getWindow().setFlags(
+            WindowManager.LayoutParams.FLAG_FULLSCREEN
+            | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+            | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
+            | WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED,
+            WindowManager.LayoutParams.FLAG_FULLSCREEN
+            | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+            | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
+            | WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+        );
+        
+        // For all Android versions, try to hide navigation
+        getWindow().getDecorView().setSystemUiVisibility(
+            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+            | View.SYSTEM_UI_FLAG_FULLSCREEN
+            | View.SYSTEM_UI_FLAG_LOW_PROFILE
+        );
+        
+        // For Android 4.4+ (API 19+), add immersive mode
+        if (Build.VERSION.SDK_INT >= 19) {
+            getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LOW_PROFILE
+                | 0x00001000  // SYSTEM_UI_FLAG_IMMERSIVE_STICKY for API 19+
+            );
+        }
+        
+        // Acquire wake lock to keep screen on
+        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+        wakeLock = powerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "CarDashboard::WakeLock");
+        wakeLock.acquire();
+    }
+    
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        
+        if (hasFocus) {
+            // Re-enable fullscreen when window gains focus - more aggressive approach
+            getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LOW_PROFILE
+            );
+            
+            // For Android 4.4+ (API 19+), add immersive mode
+            if (Build.VERSION.SDK_INT >= 19) {
+                getWindow().getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_LOW_PROFILE
+                    | 0x00001000  // SYSTEM_UI_FLAG_IMMERSIVE_STICKY for API 19+
+                );
+            }
+        }
+    }
+    
+    private void startFullscreenEnforcer() {
+        // Periodically enforce fullscreen mode to ensure navigation stays hidden
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                // Force fullscreen mode
+                getWindow().getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_LOW_PROFILE
+                );
+                
+                // For Android 4.4+ (API 19+), add immersive mode
+                if (Build.VERSION.SDK_INT >= 19) {
+                    getWindow().getDecorView().setSystemUiVisibility(
+                        View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_LOW_PROFILE
+                        | 0x00001000  // SYSTEM_UI_FLAG_IMMERSIVE_STICKY for API 19+
+                    );
+                }
+                
+                // Schedule next enforcement in 1 second
+                handler.postDelayed(this, 1000);
+            }
+        });
+    }
+    
+    private void setupTouchListeners() {
+        // Show demo and theme buttons when speedometer is tapped
+        speedometer.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showDemoAndThemeButtons();
+            }
+        });
+    }
+    
+    private void showDemoAndThemeButtons() {
+        // Cancel any existing hide timer
+        if (hideButtonsRunnable != null) {
+            buttonHideHandler.removeCallbacks(hideButtonsRunnable);
+        }
+        
+        // Show buttons on speedometer
+        speedometer.setShowDemoButton(true);
+        speedometer.setShowThemeButton(true);
+        
+        // Hide buttons after 5 seconds
+        hideButtonsRunnable = new Runnable() {
+            @Override
+            public void run() {
+                speedometer.setShowDemoButton(false);
+                speedometer.setShowThemeButton(false);
+            }
+        };
+        buttonHideHandler.postDelayed(hideButtonsRunnable, 5000);
+    }
+    
+    public void onDemoButtonClick() {
+        if (demoMode) {
+            // Stop demo mode
+            demoMode = false;
+            // Reset to real data
+            speed = 0;
+            tripDistance = 0;
+            rpm = 0;
+            coolantTemp = 82.0;
+            fuelLevel = 65.0;
+        } else {
+            // Start demo mode with animated values
+            demoMode = true;
+            startDemoAnimation();
+        }
+        updateUI();
+    }
+    
+    public void onThemeButtonClick() {
+        themeManager.cycleTheme();
+        updateTheme();
+    }
+    
+    private void startDemoAnimation() {
+        if (!demoMode) return;
+        
+        // Reset values to start from minimum
+        speed = 0;
+        rpm = 0;
+        coolantTemp = 60;
+        fuelLevel = 100;
+        tripDistance = 0;
+        fuelUsage = 0;
+        avgTemperature = 20;
+        avgSpeed = 0;
+        oilWarning = false;
+        batteryVoltage = 12.0;
+        leftTurnSignal = false;
+        rightTurnSignal = false;
+        
+        final long startTime = System.currentTimeMillis();
+        final long cycleDuration = 10000; // 10 seconds for full cycle
+        
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (demoMode) {
+                    long elapsed = System.currentTimeMillis() - startTime;
+                    float cycleProgress = (elapsed % cycleDuration) / (float) cycleDuration;
+                    
+                    // Create smooth sine wave animation (0 to 1 and back to 0)
+                    float animationProgress = (float) (Math.sin(cycleProgress * 2 * Math.PI - Math.PI/2) + 1) / 2;
+                    
+                    // Animate speed from 0 to 120 km/h and back
+                    speed = animationProgress * 120;
+                    
+                    // Animate RPM from 0 to 6000 and back
+                    rpm = animationProgress * 6000;
+                    
+                    // Animate coolant temp from 60 to 120°C and back
+                    coolantTemp = 60 + animationProgress * 60;
+                    
+                    // Animate fuel level from 100 to 0 and back
+                    fuelLevel = 100 - animationProgress * 100;
+                    
+                    // Animate trip distance (continuously increasing)
+                    tripDistance = (elapsed / 1000.0) * 10; // 10 km per second
+                    
+                    // Animate other values
+                    fuelUsage = animationProgress * 10; // 0 to 10 L/100km
+                    avgTemperature = 20 + animationProgress * 20; // 20 to 40°C
+                    avgSpeed = animationProgress * 100; // 0 to 100 km/h
+                    
+                    // Animate status indicators based on animation progress
+                    oilWarning = animationProgress > 0.7; // Warning at high values
+                    batteryVoltage = 12.0 + animationProgress * 2.0; // 12 to 14V
+                    
+                    // Animate turn signals with different patterns
+                    if (animationProgress > 0.3 && animationProgress < 0.5) {
+                        leftTurnSignal = true;
+                        rightTurnSignal = false;
+                    } else if (animationProgress > 0.7 && animationProgress < 0.9) {
+                        leftTurnSignal = false;
+                        rightTurnSignal = true;
+                    } else {
+                        leftTurnSignal = false;
+                        rightTurnSignal = false;
+                    }
+                    
+                    updateUI();
+                    
+                    // Continue animation
+                    handler.postDelayed(this, 50); // Update every 50ms for smoother animation
+                }
+            }
+        });
+    }
+    
+    // GPS Service Callbacks
+    @Override
+    public void onGpsDataUpdate(double speed, double distance, double avgSpeed) {
+        this.speed = speed;
+        this.tripDistance = distance;
+        this.avgSpeed = avgSpeed;
+        updateUI();
+    }
+    
+    @Override
+    public void onGpsStatusChange(boolean connected, String status) {
+        gpsConnected = connected;
+        updateUI();
+    }
+    
+    // Bluetooth Service Callbacks
+    @Override
+    public void onBluetoothDataUpdate(double coolantTemp, double fuelLevel, boolean oilWarning, 
+                                    double batteryVoltage, boolean drlOn, boolean lowBeamOn, 
+                                    boolean highBeamOn, boolean leftTurnSignal, boolean rightTurnSignal, 
+                                    boolean hazardLights) {
+        this.coolantTemp = coolantTemp;
+        this.fuelLevel = fuelLevel;
+        this.oilWarning = oilWarning;
+        this.batteryVoltage = batteryVoltage;
+        this.drlOn = drlOn;
+        this.lowBeamOn = lowBeamOn;
+        this.highBeamOn = highBeamOn;
+        this.leftTurnSignal = leftTurnSignal;
+        this.rightTurnSignal = rightTurnSignal;
+        this.hazardLights = hazardLights;
+        updateUI();
+    }
+    
+    @Override
+    public void onBluetoothStatusChange(boolean connected, String status) {
+        bluetoothConnected = connected;
+        updateUI();
+    }
+    
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        handler.removeCallbacksAndMessages(null);
+        
+        // Release wake lock
+        if (wakeLock != null && wakeLock.isHeld()) {
+            wakeLock.release();
+        }
+        
+        // Cleanup services
+        if (gpsService != null) {
+            gpsService.cleanup();
+        }
+        if (bluetoothService != null) {
+            bluetoothService.cleanup();
+        }
     }
 }
