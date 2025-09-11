@@ -73,6 +73,9 @@ public class MainActivity extends Activity implements GpsService.GpsDataListener
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
+        // Log auto-startup
+        android.util.Log.i("MainActivity", "Car Dashboard app started - onCreate");
+        
         // Enable fullscreen mode
         setupFullscreen();
         
@@ -177,6 +180,7 @@ public class MainActivity extends Activity implements GpsService.GpsDataListener
         bluetoothService = new BluetoothService(this);
         bluetoothService.setDataListener(this);
     }
+    
     
     private void startDataSimulation() {
         handler.post(new Runnable() {
@@ -589,8 +593,32 @@ public class MainActivity extends Activity implements GpsService.GpsDataListener
     }
     
     @Override
+    protected void onPause() {
+        super.onPause();
+        android.util.Log.d("MainActivity", "App paused - but keeping it running for car use");
+    }
+    
+    @Override
+    protected void onResume() {
+        super.onResume();
+        android.util.Log.d("MainActivity", "App resumed");
+        
+        // Ensure fullscreen mode is maintained
+        setupFullscreen();
+    }
+    
+    @Override
+    public void onBackPressed() {
+        // Prevent back button from closing the app in car mode
+        android.util.Log.d("MainActivity", "Back button pressed - ignoring for car mode");
+        // Don't call super.onBackPressed() to prevent app from closing
+    }
+    
+    @Override
     protected void onDestroy() {
         super.onDestroy();
+        android.util.Log.i("MainActivity", "Car Dashboard app destroyed");
+        
         handler.removeCallbacksAndMessages(null);
         
         // Release wake lock
@@ -605,5 +633,6 @@ public class MainActivity extends Activity implements GpsService.GpsDataListener
         if (bluetoothService != null) {
             bluetoothService.cleanup();
         }
+        
     }
 }

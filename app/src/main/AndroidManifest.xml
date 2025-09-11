@@ -12,6 +12,10 @@
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     
+    <!-- Boot startup permissions -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    
     <!-- Features -->
     <uses-feature android:name="android.hardware.location" android:required="true" />
     <uses-feature android:name="android.hardware.location.gps" android:required="true" />
@@ -36,6 +40,25 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        
+        <!-- Boot receiver for auto-startup -->
+        <receiver
+            android:name=".BootReceiver"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
+            <intent-filter android:priority="1000">
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </receiver>
+        
+        <!-- Auto-startup service -->
+        <service
+            android:name=".AutoStartupService"
+            android:enabled="true"
+            android:exported="false" />
     </application>
 
 </manifest>
