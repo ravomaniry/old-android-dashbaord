@@ -27,7 +27,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="SYSTEM STATUS"
+                android:text="@string/system_status"
                 android:textColor="#00BCD4"
                 android:textSize="12sp"
                 android:gravity="center"
@@ -65,7 +65,7 @@
 
                 </LinearLayout>
 
-                <!-- Row 2: Bluetooth and GPS -->
+                <!-- Row 2: Bluetooth -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
@@ -76,18 +76,8 @@
                     <!-- Bluetooth -->
                     <com.example.androidcardashboard.StatusIndicatorView
                         android:id="@+id/bluetooth_indicator"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:layout_marginRight="4dp" />
-
-                    <!-- GPS -->
-                    <com.example.androidcardashboard.StatusIndicatorView
-                        android:id="@+id/gps_indicator"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:layout_marginLeft="4dp" />
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
 
                 </LinearLayout>
 
@@ -186,7 +176,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="VEHICLE STATUS"
+                android:text="@string/vehicle_status"
                 android:textColor="#00BCD4"
                 android:textSize="12sp"
                 android:gravity="center"

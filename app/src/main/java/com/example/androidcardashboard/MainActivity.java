@@ -1,6 +1,7 @@
 package com.example.androidcardashboard;
 
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -10,8 +11,9 @@ import android.view.View;
 import android.view.WindowManager;
 import android.os.Build;
 import java.util.Random;
+import java.util.List;
 
-public class MainActivity extends Activity implements GpsService.GpsDataListener, BluetoothService.BluetoothDataListener {
+public class MainActivity extends Activity implements BluetoothService.BluetoothDataListener, StatusIndicatorView.OnStatusClickListener {
     // Dashboard data
     private double speed = 0.0;
     private double rpm = 0.0;
@@ -32,7 +34,6 @@ public class MainActivity extends Activity implements GpsService.GpsDataListener
     private boolean rightTurnSignal = false;
     private boolean hazardLights = false;
     private boolean bluetoothConnected = true;
-    private boolean gpsConnected = true;
     
     // Custom Views
     private SpeedometerView speedometer;
@@ -41,7 +42,6 @@ public class MainActivity extends Activity implements GpsService.GpsDataListener
     private StatusIndicatorView oilWarningIndicator;
     private StatusIndicatorView batteryIndicator;
     private StatusIndicatorView bluetoothIndicator;
-    private StatusIndicatorView gpsIndicator;
     private StatusIndicatorView drlIndicator;
     private StatusIndicatorView lowBeamIndicator;
     private StatusIndicatorView highBeamIndicator;
@@ -64,10 +64,10 @@ public class MainActivity extends Activity implements GpsService.GpsDataListener
     private Runnable hideButtonsRunnable;
     
     // Services
-    private GpsService gpsService;
     private BluetoothService bluetoothService;
     private ThemeManager themeManager;
     private PowerManager.WakeLock wakeLock;
+    private TripCalculator tripCalculator;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,7 +98,6 @@ public class MainActivity extends Activity implements GpsService.GpsDataListener
         oilWarningIndicator = (StatusIndicatorView) findViewById(R.id.oil_warning_indicator);
         batteryIndicator = (StatusIndicatorView) findViewById(R.id.battery_indicator);
         bluetoothIndicator = (StatusIndicatorView) findViewById(R.id.bluetooth_indicator);
-        gpsIndicator = (StatusIndicatorView) findViewById(R.id.gps_indicator);
         drlIndicator = (StatusIndicatorView) findViewById(R.id.drl_indicator);
         lowBeamIndicator = (StatusIndicatorView) findViewById(R.id.low_beam_indicator);
         highBeamIndicator = (StatusIndicatorView) findViewById(R.id.high_beam_indicator);
@@ -125,22 +124,23 @@ public class MainActivity extends Activity implements GpsService.GpsDataListener
         
         
         // Initialize status indicator labels
-        oilWarningIndicator.setLabel("OIL");
-        batteryIndicator.setLabel("BATTERY");
-        bluetoothIndicator.setLabel("BLUETOOTH");
-        gpsIndicator.setLabel("GPS");
-        drlIndicator.setLabel("DRL");
-        lowBeamIndicator.setLabel("LOW BEAM");
-        highBeamIndicator.setLabel("HIGH BEAM");
-        hazardIndicator.setLabel("HAZARD");
-        leftTurnIndicator.setLabel("LEFT TURN");
-        rightTurnIndicator.setLabel("RIGHT TURN");
+        oilWarningIndicator.setLabel(getString(R.string.oil_warning));
+        batteryIndicator.setLabel(getString(R.string.battery));
+        bluetoothIndicator.setLabel(getString(R.string.bluetooth));
+        drlIndicator.setLabel(getString(R.string.drl));
+        lowBeamIndicator.setLabel(getString(R.string.low_beam));
+        highBeamIndicator.setLabel(getString(R.string.high_beam));
+        hazardIndicator.setLabel(getString(R.string.hazard));
+        leftTurnIndicator.setLabel(getString(R.string.left_turn));
+        rightTurnIndicator.setLabel(getString(R.string.right_turn));
+        
+        // Set up status click listeners
+        bluetoothIndicator.setOnStatusClickListener(this);
         
         // Force text size update for all indicators
         oilWarningIndicator.updateTextSize();
         batteryIndicator.updateTextSize();
         bluetoothIndicator.updateTextSize();
-        gpsIndicator.updateTextSize();
         drlIndicator.updateTextSize();
         lowBeamIndicator.updateTextSize();
         highBeamIndicator.updateTextSize();
@@ -149,10 +149,10 @@ public class MainActivity extends Activity implements GpsService.GpsDataListener
         rightTurnIndicator.updateTextSize();
         
         // Initialize trip detail labels
-        distanceDetail.setLabel("DISTANCE");
-        fuelUsageDetail.setLabel("FUEL USE");
-        avgTempDetail.setLabel("AVG TEMP");
-        avgSpeedDetail.setLabel("AVG SPEED");
+        distanceDetail.setLabel(getString(R.string.distance));
+        fuelUsageDetail.setLabel(getString(R.string.fuel_use));
+        avgTempDetail.setLabel(getString(R.string.avg_temp));
+        avgSpeedDetail.setLabel(getString(R.string.avg_speed));
         
         // Set up speedometer button click listener
         speedometer.setButtonClickListener(new SpeedometerView.OnButtonClickListener() {
@@ -172,9 +172,8 @@ public class MainActivity extends Activity implements GpsService.GpsDataListener
         // Initialize theme manager
         themeManager = new ThemeManager();
         
-        // Initialize GPS service
-        gpsService = new GpsService(this);
-        gpsService.setDataListener(this);
+        // Initialize trip calculator
+        tripCalculator = new TripCalculator();
         
         // Initialize Bluetooth service
         bluetoothService = new BluetoothService(this);
@@ -196,12 +195,19 @@ public class MainActivity extends Activity implements GpsService.GpsDataListener
     private void updateDashboardData() {
         if (demoMode) {
             // Simulate realistic car data only if no real data is available
-            if (!gpsService.isTracking()) {
+            if (!bluetoothConnected) {
                 speed = Math.max(0, speed + (random.nextDouble() - 0.5) * 10);
                 speed = Math.min(120, speed);
                 
+                // Simulate trip data for demo mode
                 tripDistance += speed / 3600; // km per second
                 avgSpeed = speed * 0.8 + random.nextDouble() * 10;
+                
+                // Simulate fuel usage and temperature
+                if (speed > 0) {
+                    fuelUsage = 5.5 + (speed / 20) + random.nextDouble() * 2;
+                    avgTemperature = 20 + (speed / 15) + random.nextDouble() * 10;
+                }
             }
             
             if (!bluetoothService.isConnected()) {
@@ -253,7 +259,6 @@ public class MainActivity extends Activity implements GpsService.GpsDataListener
         oilWarningIndicator.setActive(oilWarning);
         updateBatteryIndicator();
         bluetoothIndicator.setActive(bluetoothConnected);
-        gpsIndicator.setActive(gpsConnected);
         drlIndicator.setActive(drlOn);
         lowBeamIndicator.setActive(lowBeamOn);
         highBeamIndicator.setActive(highBeamOn);
@@ -290,7 +295,6 @@ public class MainActivity extends Activity implements GpsService.GpsDataListener
         oilWarningIndicator.setActiveColor(themeManager.getDangerColor());
         batteryIndicator.setActiveColor(themeManager.getSuccessColor());
         bluetoothIndicator.setActiveColor(primaryColor);
-        gpsIndicator.setActiveColor(primaryColor);
         
         drlIndicator.setActiveColor(secondaryColor);
         lowBeamIndicator.setActiveColor(secondaryColor);
@@ -552,27 +556,15 @@ public class MainActivity extends Activity implements GpsService.GpsDataListener
         });
     }
     
-    // GPS Service Callbacks
-    @Override
-    public void onGpsDataUpdate(double speed, double distance, double avgSpeed) {
-        this.speed = speed;
-        this.tripDistance = distance;
-        this.avgSpeed = avgSpeed;
-        updateUI();
-    }
-    
-    @Override
-    public void onGpsStatusChange(boolean connected, String status) {
-        gpsConnected = connected;
-        updateUI();
-    }
     
     // Bluetooth Service Callbacks
     @Override
-    public void onBluetoothDataUpdate(double coolantTemp, double fuelLevel, boolean oilWarning, 
-                                    double batteryVoltage, boolean drlOn, boolean lowBeamOn, 
-                                    boolean highBeamOn, boolean leftTurnSignal, boolean rightTurnSignal, 
-                                    boolean hazardLights) {
+    public void onBluetoothDataUpdate(double speed, double rpm, double coolantTemp, double fuelLevel, 
+                                    boolean oilWarning, double batteryVoltage, boolean drlOn, 
+                                    boolean lowBeamOn, boolean highBeamOn, boolean leftTurnSignal, 
+                                    boolean rightTurnSignal, boolean hazardLights, String location) {
+        this.speed = speed;
+        this.rpm = rpm;
         this.coolantTemp = coolantTemp;
         this.fuelLevel = fuelLevel;
         this.oilWarning = oilWarning;
@@ -583,6 +575,18 @@ public class MainActivity extends Activity implements GpsService.GpsDataListener
         this.leftTurnSignal = leftTurnSignal;
         this.rightTurnSignal = rightTurnSignal;
         this.hazardLights = hazardLights;
+        
+        // Update trip calculator with location and current data
+        if (tripCalculator != null) {
+            tripCalculator.updateLocation(location, speed, coolantTemp, fuelLevel);
+            
+            // Get calculated trip metrics
+            this.tripDistance = tripCalculator.getTotalDistance();
+            this.fuelUsage = tripCalculator.getFuelUsage();
+            this.avgTemperature = tripCalculator.getAvgTemperature();
+            this.avgSpeed = tripCalculator.getAvgSpeed();
+        }
+        
         updateUI();
     }
     
@@ -627,12 +631,72 @@ public class MainActivity extends Activity implements GpsService.GpsDataListener
         }
         
         // Cleanup services
-        if (gpsService != null) {
-            gpsService.cleanup();
-        }
         if (bluetoothService != null) {
             bluetoothService.cleanup();
         }
+        if (tripCalculator != null) {
+            tripCalculator.resetTrip();
+        }
         
     }
+    
+    public void resetTrip() {
+        if (tripCalculator != null) {
+            tripCalculator.resetTrip();
+            tripDistance = 0.0;
+            fuelUsage = 0.0;
+            avgTemperature = 0.0;
+            avgSpeed = 0.0;
+            updateUI();
+            android.util.Log.d("MainActivity", "Trip reset");
+        }
+    }
+    
+    // Status click handling
+    @Override
+    public void onStatusClick(String statusType) {
+        if (getString(R.string.bluetooth).equals(statusType)) {
+            showBluetoothDialog();
+        }
+    }
+    
+    private void showBluetoothDialog() {
+        String status = bluetoothService != null ? bluetoothService.getStatus() : getString(R.string.bluetooth_not_available);
+        List<EventManager.BluetoothEvent> events = EventManager.getInstance().getLatestBluetoothEvents();
+        
+        ServiceStatusDialog dialog = new ServiceStatusDialog(
+            this,
+            getString(R.string.bluetooth_service),
+            android.R.drawable.ic_dialog_info,
+            status,
+            events,
+            new ServiceStatusDialog.OnActionClickListener() {
+                @Override
+                public void onConnectClick() {
+                    if (bluetoothService != null) {
+                        bluetoothService.connectToDevice();
+                    }
+                }
+                
+                @Override
+                public void onDisconnectClick() {
+                    if (bluetoothService != null) {
+                        bluetoothService.disconnect();
+                    }
+                }
+                
+                @Override
+                public void onRetryClick() {
+                    if (bluetoothService != null) {
+                        bluetoothService.connectToDevice();
+                    }
+                }
+                
+            }
+        );
+        
+        Dialog dialogInstance = dialog.createDialog();
+        dialogInstance.show();
+    }
+    
 }

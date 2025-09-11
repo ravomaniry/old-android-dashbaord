@@ -16,4 +16,45 @@
     <string name="fuel_use">FUEL USE</string>
     <string name="avg_temp">AVG TEMP</string>
     <string name="avg_speed">AVG SPEED</string>
+    
+    <!-- Status Indicators -->
+    <string name="oil_warning">OIL</string>
+    <string name="battery">BATTERY</string>
+    <string name="bluetooth">BLUETOOTH</string>
+    <string name="drl">DRL</string>
+    <string name="low_beam">LOW BEAM</string>
+    <string name="high_beam">HIGH BEAM</string>
+    <string name="hazard">HAZARD</string>
+    <string name="left_turn">LEFT TURN</string>
+    <string name="right_turn">RIGHT TURN</string>
+    
+    <!-- Dialog Strings -->
+    <string name="bluetooth_service">Bluetooth Service</string>
+    <string name="service_status">Service Status:</string>
+    <string name="latest_events">Latest Events (10):</string>
+    <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="retry">Retry</string>
+    <string name="close">Close</string>
+    
+    <!-- Status Messages -->
+    <string name="bluetooth_ready">Bluetooth ready</string>
+    <string name="bluetooth_disabled">Bluetooth disabled</string>
+    <string name="bluetooth_not_available">Bluetooth not available</string>
+    <string name="bluetooth_connected">Connected</string>
+    <string name="bluetooth_disconnected">Disconnected</string>
+    <string name="bluetooth_scanning">Scanning for devices...</string>
+    <string name="bluetooth_connecting">Connecting...</string>
+    <string name="bluetooth_device_not_found">Device not found</string>
+    <string name="bluetooth_connection_failed">Connection failed</string>
+    
+    
+    <!-- Event Levels -->
+    <string name="event_info">INFO</string>
+    <string name="event_status">STATUS</string>
+    <string name="event_config">CONFIG</string>
+    <string name="event_trip">TRIP</string>
+    <string name="event_data">DATA</string>
+    <string name="event_error">ERROR</string>
+    <string name="event_warning">WARNING</string>
 </resources>

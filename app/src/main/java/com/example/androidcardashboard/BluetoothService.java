@@ -35,10 +35,10 @@ public class BluetoothService {
     private String status = "Disconnected";
     
     public interface BluetoothDataListener {
-        void onBluetoothDataUpdate(double coolantTemp, double fuelLevel, boolean oilWarning, 
-                                 double batteryVoltage, boolean drlOn, boolean lowBeamOn, 
-                                 boolean highBeamOn, boolean leftTurnSignal, boolean rightTurnSignal, 
-                                 boolean hazardLights);
+        void onBluetoothDataUpdate(double speed, double rpm, double coolantTemp, double fuelLevel, 
+                                 boolean oilWarning, double batteryVoltage, boolean drlOn, 
+                                 boolean lowBeamOn, boolean highBeamOn, boolean leftTurnSignal, 
+                                 boolean rightTurnSignal, boolean hazardLights, String location);
         void onBluetoothStatusChange(boolean connected, String status);
     }
     
@@ -56,15 +56,18 @@ public class BluetoothService {
     private void initializeBluetooth() {
         if (bluetoothAdapter == null) {
             updateStatus(false, "Bluetooth not available");
+            EventManager.getInstance().addBluetoothEvent("Bluetooth not available", "ERROR");
             return;
         }
         
         if (!bluetoothAdapter.isEnabled()) {
             updateStatus(false, "Bluetooth disabled");
+            EventManager.getInstance().addBluetoothEvent("Bluetooth disabled", "ERROR");
             return;
         }
         
         updateStatus(false, "Bluetooth ready");
+        EventManager.getInstance().addBluetoothEvent("Bluetooth ready", "STATUS");
         connectToDevice();
     }
     
@@ -73,6 +76,7 @@ public class BluetoothService {
         
         isConnecting = true;
         updateStatus(false, "Scanning for devices...");
+        EventManager.getInstance().addBluetoothEvent("Scanning for devices...", "INFO");
         
         new Thread(new Runnable() {
             @Override
@@ -81,6 +85,7 @@ public class BluetoothService {
                     // Get bonded devices
                     Set<BluetoothDevice> bondedDevices = bluetoothAdapter.getBondedDevices();
                     Log.d(TAG, "Found " + bondedDevices.size() + " bonded devices");
+                    EventManager.getInstance().addBluetoothEvent("Found " + bondedDevices.size() + " bonded devices", "INFO");
                     
                     BluetoothDevice targetDevice = null;
                     for (BluetoothDevice device : bondedDevices) {
@@ -92,11 +97,13 @@ public class BluetoothService {
                     
                     if (targetDevice == null) {
                         updateStatus(false, "Device not found. Please pair " + TARGET_DEVICE_NAME + " first.");
+                        EventManager.getInstance().addBluetoothEvent("Target device " + TARGET_DEVICE_NAME + " not found", "ERROR");
                         isConnecting = false;
                         return;
                     }
                     
                     updateStatus(false, "Connecting to " + targetDevice.getName() + "...");
+                    EventManager.getInstance().addBluetoothEvent("Connecting to " + targetDevice.getName() + "...", "INFO");
                     
                     // Create socket and connect
                     bluetoothSocket = targetDevice.createRfcommSocketToServiceRecord(SPP_UUID);
@@ -105,13 +112,16 @@ public class BluetoothService {
                     isConnected = true;
                     isConnecting = false;
                     updateStatus(true, "Connected");
+                    EventManager.getInstance().addBluetoothEvent("Bluetooth connection established", "STATUS");
                     
                     // Start listening for data
                     listenForData();
+                    EventManager.getInstance().addBluetoothEvent("Started listening for data...", "INFO");
                     
                 } catch (IOException e) {
                     Log.e(TAG, "Connection failed", e);
                     updateStatus(false, "Connection failed: " + e.getMessage());
+                    EventManager.getInstance().addBluetoothEvent("Connection failed: " + e.getMessage(), "ERROR");
                     isConnecting = false;
                 }
             }
@@ -146,6 +156,9 @@ public class BluetoothService {
         try {
             JSONObject json = new JSONObject(data);
             
+            // Parse all fields with default values for missing keys
+            double speed = json.optDouble("speed", 0.0);
+            double rpm = json.optDouble("rpm", 0.0);
             double coolantTemp = json.optDouble("coolantTemp", 0.0);
             double fuelLevel = json.optDouble("fuelLevel", 0.0);
             boolean oilWarning = json.optBoolean("oilWarning", false);
@@ -156,12 +169,35 @@ public class BluetoothService {
             boolean leftTurnSignal = json.optBoolean("leftTurnSignal", false);
             boolean rightTurnSignal = json.optBoolean("rightTurnSignal", false);
             boolean hazardLights = json.optBoolean("hazardLights", false);
+            String location = json.optString("location", "");
             
-            Log.d(TAG, String.format("Received data: temp=%.1f°C, fuel=%.1f%%, battery=%.1fV", 
-                coolantTemp, fuelLevel, batteryVoltage));
+            Log.d(TAG, String.format("Received data: speed=%.1f km/h, rpm=%.0f, temp=%.1f°C, fuel=%.1f%%, battery=%.1fV, location=%s", 
+                speed, rpm, coolantTemp, fuelLevel, batteryVoltage, location));
+            
+            // Add data events for key metrics
+            if (json.has("speed")) {
+                EventManager.getInstance().addBluetoothEvent("Received speed: " + String.format("%.1f km/h", speed), "DATA");
+            }
+            if (json.has("rpm")) {
+                EventManager.getInstance().addBluetoothEvent("Received RPM: " + String.format("%.0f", rpm), "DATA");
+            }
+            if (json.has("coolantTemp")) {
+                EventManager.getInstance().addBluetoothEvent("Received coolant temp: " + String.format("%.1f°C", coolantTemp), "DATA");
+            }
+            if (json.has("fuelLevel")) {
+                EventManager.getInstance().addBluetoothEvent("Received fuel level: " + String.format("%.1f%%", fuelLevel), "DATA");
+            }
+            if (json.has("batteryVoltage")) {
+                EventManager.getInstance().addBluetoothEvent("Received battery voltage: " + String.format("%.1fV", batteryVoltage), "DATA");
+            }
+            if (json.has("location") && !location.isEmpty()) {
+                EventManager.getInstance().addBluetoothEvent("Received location: " + location, "DATA");
+            }
             
             // Update UI on main thread
             if (dataListener != null) {
+                final double finalSpeed = speed;
+                final double finalRpm = rpm;
                 final double finalCoolantTemp = coolantTemp;
                 final double finalFuelLevel = fuelLevel;
                 final boolean finalOilWarning = oilWarning;
@@ -172,19 +208,21 @@ public class BluetoothService {
                 final boolean finalLeftTurnSignal = leftTurnSignal;
                 final boolean finalRightTurnSignal = rightTurnSignal;
                 final boolean finalHazardLights = hazardLights;
+                final String finalLocation = location;
                 
                 mainHandler.post(new Runnable() {
                     @Override
                     public void run() {
-                        dataListener.onBluetoothDataUpdate(finalCoolantTemp, finalFuelLevel, finalOilWarning, 
-                            finalBatteryVoltage, finalDrlOn, finalLowBeamOn, finalHighBeamOn, 
-                            finalLeftTurnSignal, finalRightTurnSignal, finalHazardLights);
+                        dataListener.onBluetoothDataUpdate(finalSpeed, finalRpm, finalCoolantTemp, finalFuelLevel, 
+                            finalOilWarning, finalBatteryVoltage, finalDrlOn, finalLowBeamOn, finalHighBeamOn, 
+                            finalLeftTurnSignal, finalRightTurnSignal, finalHazardLights, finalLocation);
                     }
                 });
             }
             
         } catch (JSONException e) {
             Log.e(TAG, "Failed to parse JSON data: " + data, e);
+            EventManager.getInstance().addBluetoothEvent("Failed to parse JSON data: " + data, "ERROR");
         }
     }
     

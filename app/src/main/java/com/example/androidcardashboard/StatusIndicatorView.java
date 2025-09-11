@@ -9,8 +9,9 @@ import android.graphics.RectF;
 import android.os.Handler;
 import android.util.AttributeSet;
 import android.view.View;
+import android.view.View.OnClickListener;
 
-public class StatusIndicatorView extends View {
+public class StatusIndicatorView extends View implements OnClickListener {
     private Paint indicatorPaint;
     private Paint textPaint;
     private Paint backgroundPaint;
@@ -28,6 +29,8 @@ public class StatusIndicatorView extends View {
     
     private int centerX, centerY;
     private float indicatorRadius;
+    
+    private OnStatusClickListener statusClickListener;
     
     public StatusIndicatorView(Context context) {
         super(context);
@@ -53,6 +56,9 @@ public class StatusIndicatorView extends View {
         backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         backgroundPaint.setColor(Color.TRANSPARENT);
         backgroundPaint.setStyle(Paint.Style.FILL);
+        
+        // Set click listener
+        setOnClickListener(this);
     }
     
     @Override
@@ -377,5 +383,20 @@ public class StatusIndicatorView extends View {
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         stopBlinking();
+    }
+    
+    public interface OnStatusClickListener {
+        void onStatusClick(String statusType);
+    }
+    
+    public void setOnStatusClickListener(OnStatusClickListener listener) {
+        this.statusClickListener = listener;
+    }
+    
+    @Override
+    public void onClick(View v) {
+        if (statusClickListener != null) {
+            statusClickListener.onStatusClick(label);
+        }
     }
 }

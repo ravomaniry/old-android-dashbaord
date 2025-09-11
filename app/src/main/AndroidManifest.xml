@@ -4,8 +4,6 @@
     package="com.example.androidcardashboard">
 
     <!-- Permissions -->
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
@@ -17,8 +15,6 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     
     <!-- Features -->
-    <uses-feature android:name="android.hardware.location" android:required="true" />
-    <uses-feature android:name="android.hardware.location.gps" android:required="true" />
     <uses-feature android:name="android.hardware.bluetooth" android:required="true" />
 
     <application

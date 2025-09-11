@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="4dp"
+    android:gravity="center_vertical">
+
+    <!-- Event Level -->
+    <TextView
+        android:id="@+id/event_level"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="INFO"
+        android:textColor="#00D9FF"
+        android:textSize="8sp"
+        android:textStyle="bold"
+        android:background="#2000D9FF"
+        android:padding="4dp"
+        android:layout_marginRight="8dp" />
+
+    <!-- Event Message -->
+    <TextView
+        android:id="@+id/event_message"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Event message"
+        android:textColor="#FFFFFF"
+        android:textSize="10sp"
+        android:layout_marginRight="8dp" />
+
+    <!-- Event Time -->
+    <TextView
+        android:id="@+id/event_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="12:34"
+        android:textColor="#666666"
+        android:textSize="8sp" />
+
+</LinearLayout>
