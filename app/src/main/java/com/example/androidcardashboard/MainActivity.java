@@ -9,6 +9,7 @@ import android.os.Looper;
 import android.os.PowerManager;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.os.Build;
 import java.util.Random;
@@ -346,6 +347,58 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
         
         // Update background colors
         findViewById(android.R.id.content).setBackgroundColor(backgroundColor);
+        
+        // Update status box styling based on theme
+        updateStatusBoxStyling();
+    }
+    
+    private void updateStatusBoxStyling() {
+        // Find the status box containers
+        LinearLayout systemStatusBox = (LinearLayout) findViewById(R.id.system_status_box);
+        LinearLayout vehicleStatusBox = (LinearLayout) findViewById(R.id.vehicle_status_box);
+        
+        // Find the text labels
+        TextView systemStatusLabel = (TextView) findViewById(R.id.system_status_label);
+        TextView vehicleStatusLabel = (TextView) findViewById(R.id.vehicle_status_label);
+        
+        if (themeManager.getCurrentTheme() == ThemeManager.ThemeType.ANALOG) {
+            // Analog theme: Remove backgrounds, borders, hide text labels, but keep icons visible
+            if (systemStatusBox != null) {
+                systemStatusBox.setBackground(null);
+                systemStatusBox.setPadding(0, 0, 0, 0);
+                systemStatusBox.setVisibility(View.VISIBLE); // Keep system status box visible
+            }
+            if (vehicleStatusBox != null) {
+                vehicleStatusBox.setBackground(null);
+                vehicleStatusBox.setPadding(0, 0, 0, 0);
+                vehicleStatusBox.setVisibility(View.VISIBLE); // Keep vehicle status box visible
+            }
+            if (systemStatusLabel != null) {
+                systemStatusLabel.setVisibility(View.GONE); // Hide text label only
+            }
+            if (vehicleStatusLabel != null) {
+                vehicleStatusLabel.setVisibility(View.GONE); // Hide text label only
+            }
+        } else {
+            // Other themes: Restore backgrounds, borders, show text labels, and show status indicators
+            int paddingPx = (int) (12 * getResources().getDisplayMetrics().density); // Convert 12dp to pixels
+            if (systemStatusBox != null) {
+                systemStatusBox.setBackgroundResource(R.drawable.status_box_background);
+                systemStatusBox.setPadding(paddingPx, paddingPx, paddingPx, paddingPx);
+                systemStatusBox.setVisibility(View.VISIBLE); // Show system status box
+            }
+            if (vehicleStatusBox != null) {
+                vehicleStatusBox.setBackgroundResource(R.drawable.status_box_background);
+                vehicleStatusBox.setPadding(paddingPx, paddingPx, paddingPx, paddingPx);
+                vehicleStatusBox.setVisibility(View.VISIBLE); // Show vehicle status box
+            }
+            if (systemStatusLabel != null) {
+                systemStatusLabel.setVisibility(View.VISIBLE);
+            }
+            if (vehicleStatusLabel != null) {
+                vehicleStatusLabel.setVisibility(View.VISIBLE);
+            }
+        }
     }
     
     private void setupFullscreen() {

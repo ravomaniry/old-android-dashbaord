@@ -106,8 +106,8 @@ public class StatusIndicatorView extends View implements OnClickListener {
         // Draw icon based on label
         drawIcon(canvas);
         
-        // Draw label closer to the indicator to save space
-        if (!label.isEmpty()) {
+        // Draw label closer to the indicator to save space (hide in analog theme)
+        if (!label.isEmpty() && themeManager.getCurrentTheme() != ThemeManager.ThemeType.ANALOG) {
             // Set text color to match the indicator color
             textPaint.setColor(indicatorPaint.getColor());
             canvas.drawText(label, centerX, centerY + indicatorRadius * 1.2f, textPaint);

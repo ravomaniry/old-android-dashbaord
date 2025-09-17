@@ -15,6 +15,7 @@
 
         <!-- System Status Section -->
         <LinearLayout
+            android:id="@+id/system_status_box"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
@@ -25,6 +26,7 @@
 
             <!-- System Status Header -->
             <TextView
+                android:id="@+id/system_status_label"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/system_status"
@@ -76,8 +78,17 @@
                     <!-- WiFi -->
                     <com.example.androidcardashboard.StatusIndicatorView
                         android:id="@+id/wifi_indicator"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent" />
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginRight="4dp" />
+
+                    <!-- Empty placeholder to push WiFi to left -->
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginLeft="4dp" />
 
                 </LinearLayout>
 
@@ -164,6 +175,7 @@
 
         <!-- Vehicle Status Section -->
         <LinearLayout
+            android:id="@+id/vehicle_status_box"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
@@ -174,6 +186,7 @@
 
             <!-- Vehicle Status Header -->
             <TextView
+                android:id="@+id/vehicle_status_label"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/vehicle_status"

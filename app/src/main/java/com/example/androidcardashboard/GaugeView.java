@@ -136,6 +136,10 @@ public class GaugeView extends View {
                 // No background circle for Linux theme
                 drawHtopStyleGauge(canvas, normalizedValue, progressColor);
                 break;
+            case ANALOG:
+                // Draw analog-style gauge with traditional markings
+                drawAnalogStyleGauge(canvas, normalizedValue, progressColor);
+                break;
         }
         
         // Draw center circle
@@ -347,5 +351,102 @@ public class GaugeView extends View {
         progressPaint.setColor(progressColor);
         progressPaint.setStrokeCap(Paint.Cap.ROUND);
         canvas.drawArc(progressRect, -135, sweepAngle, false, progressPaint);
+    }
+    
+    private void drawAnalogStyleGauge(Canvas canvas, float normalizedValue, int progressColor) {
+        // Analog-style gauge with traditional markings and needle
+        
+        // Draw gauge bezel (outer rim)
+        Paint bezelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        bezelPaint.setColor(themeManager.getSecondaryAccentColor()); // Gold bezel
+        bezelPaint.setStyle(Paint.Style.STROKE);
+        bezelPaint.setStrokeWidth(6);
+        canvas.drawCircle(centerX, centerY, radius, bezelPaint);
+        
+        // Draw inner bezel ring
+        Paint innerBezelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        innerBezelPaint.setColor(themeManager.getPrimaryAccentColor()); // Lighter gold
+        innerBezelPaint.setStyle(Paint.Style.STROKE);
+        innerBezelPaint.setStrokeWidth(3);
+        canvas.drawCircle(centerX, centerY, radius - 4, innerBezelPaint);
+        
+        // Draw gauge face background
+        canvas.drawCircle(centerX, centerY, radius - 8, backgroundPaint);
+        
+        // Draw tick marks (0-100 scale)
+        Paint tickPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        tickPaint.setColor(themeManager.getTextSecondaryColor());
+        tickPaint.setStrokeWidth(2);
+        
+        Paint majorTickPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        majorTickPaint.setColor(themeManager.getTextPrimaryColor());
+        majorTickPaint.setStrokeWidth(3);
+        
+        Paint numberPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        numberPaint.setColor(themeManager.getTextPrimaryColor());
+        numberPaint.setTextSize(radius * 0.1f);
+        numberPaint.setTextAlign(Paint.Align.CENTER);
+        numberPaint.setTypeface(themeManager.getPrimaryFont());
+        
+        int numTicks = 20; // 20 major ticks for 0-100
+        for (int i = 0; i <= numTicks; i++) {
+            float angle = (float) (-Math.PI * 1.25 + (i / (float) numTicks) * Math.PI * 1.5);
+            float tickLength = (i % 5 == 0) ? radius * 0.1f : radius * 0.05f; // Major ticks every 5
+            float tickStart = radius - 8 - tickLength;
+            
+            Paint currentTickPaint = (i % 5 == 0) ? majorTickPaint : tickPaint;
+            
+            float startX = centerX + (float) (Math.cos(angle) * tickStart);
+            float startY = centerY + (float) (Math.sin(angle) * tickStart);
+            float endX = centerX + (float) (Math.cos(angle) * (radius - 8));
+            float endY = centerY + (float) (Math.sin(angle) * (radius - 8));
+            
+            canvas.drawLine(startX, startY, endX, endY, currentTickPaint);
+            
+            // Draw numbers for major ticks
+            if (i % 5 == 0) {
+                float numberRadius = radius - 8 - tickLength - 12;
+                float numberX = centerX + (float) (Math.cos(angle) * numberRadius);
+                float numberY = centerY + (float) (Math.sin(angle) * numberRadius) + radius * 0.04f;
+                canvas.drawText(String.valueOf(i * 5), numberX, numberY, numberPaint);
+            }
+        }
+        
+        // Draw needle with realistic design
+        float needleAngle = (float) (-Math.PI * 1.25 + normalizedValue * Math.PI * 1.5);
+        
+        // Main needle - longer and more visible
+        Paint needlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        needlePaint.setColor(progressColor);
+        needlePaint.setStrokeWidth(6);
+        needlePaint.setStrokeCap(Paint.Cap.ROUND);
+        
+        float needleLength = radius * 0.7f; // Longer needle
+        float needleEndX = centerX + (float) (Math.cos(needleAngle) * needleLength);
+        float needleEndY = centerY + (float) (Math.sin(needleAngle) * needleLength);
+        
+        canvas.drawLine(centerX, centerY, needleEndX, needleEndY, needlePaint);
+        
+        // Needle counterweight (small circle at opposite end)
+        Paint counterweightPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        counterweightPaint.setColor(themeManager.getTextSecondaryColor());
+        counterweightPaint.setStyle(Paint.Style.FILL);
+        
+        float counterweightLength = radius * 0.2f; // Longer counterweight
+        float counterweightX = centerX + (float) (Math.cos(needleAngle + Math.PI) * counterweightLength);
+        float counterweightY = centerY + (float) (Math.sin(needleAngle + Math.PI) * counterweightLength);
+        canvas.drawCircle(counterweightX, counterweightY, 4, counterweightPaint);
+        
+        // Draw needle center hub
+        Paint hubPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        hubPaint.setColor(themeManager.getSecondaryAccentColor()); // Gold hub
+        hubPaint.setStyle(Paint.Style.FILL);
+        canvas.drawCircle(centerX, centerY, 6, hubPaint);
+        
+        // Draw center dot
+        Paint centerDotPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        centerDotPaint.setColor(themeManager.getBackgroundColor()); // Dark center
+        centerDotPaint.setStyle(Paint.Style.FILL);
+        canvas.drawCircle(centerX, centerY, 3, centerDotPaint);
     }
 }
