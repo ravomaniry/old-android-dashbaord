@@ -33,6 +33,7 @@ public class MainActivity extends Activity implements BluetoothService.Bluetooth
     private boolean leftTurnSignal = false;
     private boolean rightTurnSignal = false;
     private boolean hazardLights = false;
+    private boolean reverseGear = false;
     private boolean bluetoothConnected = true;
     
     // Custom Views
@@ -244,6 +245,7 @@ public class MainActivity extends Activity implements BluetoothService.Bluetooth
         // Update speedometer
         speedometer.setSpeed((float) speed);
         speedometer.setRpm((float) rpm);
+        speedometer.setReverseGear(reverseGear);
         
         // Update gauges
         coolantGauge.setValue((float) coolantTemp);
@@ -497,6 +499,7 @@ public class MainActivity extends Activity implements BluetoothService.Bluetooth
         batteryVoltage = 12.0;
         leftTurnSignal = false;
         rightTurnSignal = false;
+        reverseGear = false;
         
         final long startTime = System.currentTimeMillis();
         final long cycleDuration = 10000; // 10 seconds for full cycle
@@ -547,6 +550,10 @@ public class MainActivity extends Activity implements BluetoothService.Bluetooth
                         rightTurnSignal = false;
                     }
                     
+                    // Animate reverse gear - engage when speed is low and animation is in certain range
+                    reverseGear = (animationProgress > 0.1 && animationProgress < 0.2) || 
+                                 (animationProgress > 0.8 && animationProgress < 0.9);
+                    
                     updateUI();
                     
                     // Continue animation
@@ -562,7 +569,7 @@ public class MainActivity extends Activity implements BluetoothService.Bluetooth
     public void onBluetoothDataUpdate(double speed, double rpm, double coolantTemp, double fuelLevel, 
                                     boolean oilWarning, double batteryVoltage, boolean drlOn, 
                                     boolean lowBeamOn, boolean highBeamOn, boolean leftTurnSignal, 
-                                    boolean rightTurnSignal, boolean hazardLights, String location) {
+                                    boolean rightTurnSignal, boolean hazardLights, boolean reverseGear, String location) {
         this.speed = speed;
         this.rpm = rpm;
         this.coolantTemp = coolantTemp;
@@ -575,6 +582,7 @@ public class MainActivity extends Activity implements BluetoothService.Bluetooth
         this.leftTurnSignal = leftTurnSignal;
         this.rightTurnSignal = rightTurnSignal;
         this.hazardLights = hazardLights;
+        this.reverseGear = reverseGear;
         
         // Update trip calculator with location and current data
         if (tripCalculator != null) {

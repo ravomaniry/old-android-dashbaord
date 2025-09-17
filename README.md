@@ -7,6 +7,7 @@ A modern Android car dashboard application that receives real-time vehicle data 
 ### 🚗 **Real-time Vehicle Data**
 
 - **Speed & RPM:** Current speed in km/h and engine RPM
+- **Reverse Gear:** Displays "R" in speedometer when car is in reverse
 - **Engine Temperature:** Coolant temperature monitoring
 - **Fuel Level:** Real-time fuel percentage
 - **Battery Voltage:** Electrical system monitoring
@@ -19,6 +20,12 @@ A modern Android car dashboard application that receives real-time vehicle data 
 - **High Beam Headlights**
 - **Hazard Lights**
 - **Turn Signals (Left/Right)**
+
+### 🔄 **Gear Status**
+
+- **Reverse Gear:** When engaged, the speedometer displays "R" instead of speed value
+- **Visual Feedback:** Clear indication when vehicle is in reverse mode
+- **Real-time Updates:** Instant display changes when gear status changes
 
 ### 📊 **Trip Calculations**
 
@@ -80,6 +87,7 @@ The app expects JSON data via Bluetooth with the following structure. All fields
 | `leftTurnSignal`  | boolean | Left turn signal status       | false   |
 | `rightTurnSignal` | boolean | Right turn signal status      | false   |
 | `hazardLights`    | boolean | Hazard lights status          | false   |
+| `reverseGear`     | boolean | Reverse gear engagement       | false   |
 
 #### Location Data
 
@@ -105,6 +113,17 @@ The app expects JSON data via Bluetooth with the following structure. All fields
 }
 ```
 
+#### Reverse Gear Example
+
+```json
+{
+  "speed": 0.0,
+  "reverseGear": true
+}
+```
+
+When `reverseGear` is `true`, the speedometer will display "R" instead of the speed value, providing clear visual feedback that the vehicle is in reverse mode.
+
 #### Full Status Update
 
 ```json
@@ -121,6 +140,7 @@ The app expects JSON data via Bluetooth with the following structure. All fields
   "leftTurnSignal": false,
   "rightTurnSignal": false,
   "hazardLights": false,
+  "reverseGear": false,
   "location": "40.7128,-74.0060"
 }
 ```
@@ -238,7 +258,7 @@ The app expects JSON data via Bluetooth with the following structure. All fields
 - **MainActivity:** UI and data coordination
 - **BluetoothService:** Bluetooth communication and JSON parsing
 - **TripCalculator:** Location-based trip metric calculations
-- **Custom Views:** Speedometer, gauges, and status indicators
+- **Custom Views:** Speedometer (with reverse gear display), gauges, and status indicators
 
 ### Data Flow
 

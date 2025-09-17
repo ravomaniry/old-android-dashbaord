@@ -20,6 +20,7 @@ public class SpeedometerView extends View {
     private float rpm = 0;
     private float maxSpeed = 120;
     private float maxRpm = 6000;
+    private boolean reverseGear = false;
     
     private int centerX, centerY;
     private float radius;
@@ -115,8 +116,12 @@ public class SpeedometerView extends View {
         // Draw center circle
         canvas.drawCircle(centerX, centerY, radius * 0.6f, centerPaint);
         
-        // Draw speed value
-        canvas.drawText(String.valueOf((int) speed), centerX, centerY + radius * 0.1f, textPaint);
+        // Draw speed value or "R" for reverse
+        if (reverseGear) {
+            canvas.drawText("R", centerX, centerY + radius * 0.1f, textPaint);
+        } else {
+            canvas.drawText(String.valueOf((int) speed), centerX, centerY + radius * 0.1f, textPaint);
+        }
         
         // Draw "KM/H" label
         canvas.drawText("KM/H", centerX, centerY + radius * 0.3f, rpmPaint);
@@ -263,5 +268,14 @@ public class SpeedometerView extends View {
     
     public void setButtonClickListener(OnButtonClickListener listener) {
         this.buttonClickListener = listener;
+    }
+    
+    public void setReverseGear(boolean reverseGear) {
+        this.reverseGear = reverseGear;
+        invalidate();
+    }
+    
+    public boolean getReverseGear() {
+        return reverseGear;
     }
 }

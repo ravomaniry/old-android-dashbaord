@@ -38,7 +38,7 @@ public class BluetoothService {
         void onBluetoothDataUpdate(double speed, double rpm, double coolantTemp, double fuelLevel, 
                                  boolean oilWarning, double batteryVoltage, boolean drlOn, 
                                  boolean lowBeamOn, boolean highBeamOn, boolean leftTurnSignal, 
-                                 boolean rightTurnSignal, boolean hazardLights, String location);
+                                 boolean rightTurnSignal, boolean hazardLights, boolean reverseGear, String location);
         void onBluetoothStatusChange(boolean connected, String status);
     }
     
@@ -169,10 +169,11 @@ public class BluetoothService {
             boolean leftTurnSignal = json.optBoolean("leftTurnSignal", false);
             boolean rightTurnSignal = json.optBoolean("rightTurnSignal", false);
             boolean hazardLights = json.optBoolean("hazardLights", false);
+            boolean reverseGear = json.optBoolean("reverseGear", false);
             String location = json.optString("location", "");
             
-            Log.d(TAG, String.format("Received data: speed=%.1f km/h, rpm=%.0f, temp=%.1f°C, fuel=%.1f%%, battery=%.1fV, location=%s", 
-                speed, rpm, coolantTemp, fuelLevel, batteryVoltage, location));
+            Log.d(TAG, String.format("Received data: speed=%.1f km/h, rpm=%.0f, temp=%.1f°C, fuel=%.1f%%, battery=%.1fV, reverse=%s, location=%s", 
+                speed, rpm, coolantTemp, fuelLevel, batteryVoltage, reverseGear ? "ON" : "OFF", location));
             
             // Add data events for key metrics
             if (json.has("speed")) {
@@ -193,6 +194,9 @@ public class BluetoothService {
             if (json.has("location") && !location.isEmpty()) {
                 EventManager.getInstance().addBluetoothEvent("Received location: " + location, "DATA");
             }
+            if (json.has("reverseGear")) {
+                EventManager.getInstance().addBluetoothEvent("Received reverse gear: " + (reverseGear ? "ON" : "OFF"), "DATA");
+            }
             
             // Update UI on main thread
             if (dataListener != null) {
@@ -208,6 +212,7 @@ public class BluetoothService {
                 final boolean finalLeftTurnSignal = leftTurnSignal;
                 final boolean finalRightTurnSignal = rightTurnSignal;
                 final boolean finalHazardLights = hazardLights;
+                final boolean finalReverseGear = reverseGear;
                 final String finalLocation = location;
                 
                 mainHandler.post(new Runnable() {
@@ -215,7 +220,7 @@ public class BluetoothService {
                     public void run() {
                         dataListener.onBluetoothDataUpdate(finalSpeed, finalRpm, finalCoolantTemp, finalFuelLevel, 
                             finalOilWarning, finalBatteryVoltage, finalDrlOn, finalLowBeamOn, finalHighBeamOn, 
-                            finalLeftTurnSignal, finalRightTurnSignal, finalHazardLights, finalLocation);
+                            finalLeftTurnSignal, finalRightTurnSignal, finalHazardLights, finalReverseGear, finalLocation);
                     }
                 });
             }
