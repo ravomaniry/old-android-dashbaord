@@ -17,7 +17,7 @@ public class TripDetailView extends View {
     private String label = "";
     private String value = "";
     private int textColor = Color.parseColor("#B0B0B0");
-    private int valueColor = Color.parseColor("#4CAF50");
+    private int valueColor = Color.parseColor("#00BCD4"); // Cyan instead of green
     
     private int centerX, centerY;
     private RectF backgroundRect;

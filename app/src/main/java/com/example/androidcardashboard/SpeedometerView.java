@@ -31,6 +31,11 @@ public class SpeedometerView extends View {
     private int secondaryColor = Color.parseColor("#4CAF50");
     private int backgroundColor = Color.parseColor("#0A0A0A");
     
+    // Speed-based colors
+    private int greenColor = Color.parseColor("#4CAF50"); // Green up to 50 kph
+    private int orangeColor = Color.parseColor("#FF9800"); // Orange until 80 kph
+    private int redColor = Color.parseColor("#F44336"); // Red above 80 kph
+    
     // Button visibility and callbacks
     private boolean showDemoButton = false;
     private boolean showThemeButton = false;
@@ -109,24 +114,32 @@ public class SpeedometerView extends View {
         // Draw background circle
         canvas.drawCircle(centerX, centerY, radius, backgroundPaint);
         
-        // Draw progress arc
+        // Draw progress arc with speed-based color
         float sweepAngle = (speed / maxSpeed) * 270; // 270 degrees for 3/4 circle
+        progressPaint.setColor(getSpeedBasedColor()); // Use speed-based color for the arc
         canvas.drawArc(progressRect, -135, sweepAngle, false, progressPaint);
         
         // Draw center circle
         canvas.drawCircle(centerX, centerY, radius * 0.6f, centerPaint);
         
+        // Get speed-based color
+        int speedColor = getSpeedBasedColor();
+        
         // Draw speed value or "R" for reverse
         if (reverseGear) {
+            textPaint.setColor(primaryColor); // Use primary color for reverse
             canvas.drawText("R", centerX, centerY + radius * 0.1f, textPaint);
         } else {
+            textPaint.setColor(speedColor); // Use speed-based color
             canvas.drawText(String.valueOf((int) speed), centerX, centerY + radius * 0.1f, textPaint);
         }
         
-        // Draw "KM/H" label
+        // Draw "KM/H" label with speed-based color
+        rpmPaint.setColor(speedColor);
         canvas.drawText("KM/H", centerX, centerY + radius * 0.3f, rpmPaint);
         
-        // Draw RPM display at bottom
+        // Draw RPM display at bottom (reset to original color)
+        rpmPaint.setColor(secondaryColor);
         String rpmText = String.format("%.1fK RPM", rpm / 1000);
         canvas.drawText(rpmText, centerX, centerY + radius * 0.8f, rpmPaint);
         
@@ -236,6 +249,16 @@ public class SpeedometerView extends View {
     
     public float getSpeed() {
         return speed;
+    }
+    
+    private int getSpeedBasedColor() {
+        if (speed <= 50) {
+            return greenColor; // Green up to 50 kph
+        } else if (speed <= 80) {
+            return orangeColor; // Orange until 80 kph
+        } else {
+            return redColor; // Red above 80 kph
+        }
     }
     
     public float getRpm() {
