@@ -18,10 +18,11 @@ public class StatusIndicatorView extends View implements OnClickListener {
     
     private boolean isActive = false;
     private String label = "";
-    private int activeColor = Color.parseColor("#00BCD4");
-    private int inactiveColor = Color.parseColor("#404040");
-    private int textColor = Color.parseColor("#B0B0B0");
+    private int activeColor;
+    private int inactiveColor;
+    private int textColor;
     private boolean alwaysShowColor = false; // For indicators that should show color even when inactive
+    private ThemeManager themeManager;
     
     private boolean isBlinking = false;
     private boolean blinkState = false;
@@ -35,15 +36,20 @@ public class StatusIndicatorView extends View implements OnClickListener {
     
     public StatusIndicatorView(Context context) {
         super(context);
+        this.themeManager = new ThemeManager(context);
         init();
     }
     
     public StatusIndicatorView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        this.themeManager = new ThemeManager(context);
         init();
     }
     
     private void init() {
+        // Initialize theme colors
+        updateThemeColors();
+        
         // Indicator circle paint
         indicatorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         indicatorPaint.setStyle(Paint.Style.FILL);
@@ -554,6 +560,13 @@ public class StatusIndicatorView extends View implements OnClickListener {
     
     public void setActiveColor(int color) {
         this.activeColor = color;
+        invalidate();
+    }
+    
+    public void updateThemeColors() {
+        this.activeColor = themeManager.getPrimaryAccentColor();
+        this.inactiveColor = themeManager.getInactiveColor();
+        this.textColor = themeManager.getTextSecondaryColor();
         invalidate();
     }
     

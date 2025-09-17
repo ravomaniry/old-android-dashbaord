@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.view.View;
 
@@ -16,31 +17,40 @@ public class TripDetailView extends View {
     
     private String label = "";
     private String value = "";
-    private int textColor = Color.parseColor("#B0B0B0");
-    private int valueColor = Color.parseColor("#00BCD4"); // Cyan instead of green
+    private int textColor;
+    private int valueColor;
     
     private int centerX, centerY;
     private RectF backgroundRect;
     
+    // Font
+    private Typeface font = Typeface.DEFAULT;
+    private ThemeManager themeManager;
+    
     public TripDetailView(Context context) {
         super(context);
+        this.themeManager = new ThemeManager(context);
         init();
     }
     
     public TripDetailView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        this.themeManager = new ThemeManager(context);
         init();
     }
     
     private void init() {
+        // Initialize theme colors
+        updateThemeColors();
+        
         // Background paint
         backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        backgroundPaint.setColor(Color.parseColor("#1A1A1A"));
+        backgroundPaint.setColor(themeManager.getContainerColor());
         backgroundPaint.setStyle(Paint.Style.FILL);
         
         // Border paint
         borderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        borderPaint.setColor(Color.parseColor("#333333"));
+        borderPaint.setColor(themeManager.getInactiveColor());
         borderPaint.setStyle(Paint.Style.STROKE);
         borderPaint.setStrokeWidth(2);
         
@@ -49,12 +59,14 @@ public class TripDetailView extends View {
         labelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         labelPaint.setColor(textColor);
         labelPaint.setTextAlign(Paint.Align.CENTER);
+        labelPaint.setTypeface(themeManager.getPrimaryFont());
         
         // Value text paint
         valuePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         valuePaint.setColor(valueColor);
         valuePaint.setTextAlign(Paint.Align.CENTER);
         valuePaint.setFakeBoldText(true);
+        valuePaint.setTypeface(themeManager.getBoldFont());
     }
     
     @Override
@@ -106,6 +118,36 @@ public class TripDetailView extends View {
     public void setTextColor(int color) {
         this.textColor = color;
         labelPaint.setColor(color);
+        invalidate();
+    }
+    
+    public void setFont(Typeface font) {
+        this.font = font;
+        if (labelPaint != null) {
+            labelPaint.setTypeface(themeManager.getPrimaryFont());
+        }
+        if (valuePaint != null) {
+            valuePaint.setTypeface(themeManager.getBoldFont());
+        }
+        invalidate();
+    }
+    
+    public void updateThemeColors() {
+        this.textColor = themeManager.getTextSecondaryColor();
+        this.valueColor = themeManager.getPrimaryAccentColor();
+        
+        if (backgroundPaint != null) {
+            backgroundPaint.setColor(themeManager.getContainerColor());
+        }
+        if (borderPaint != null) {
+            borderPaint.setColor(themeManager.getInactiveColor());
+        }
+        if (labelPaint != null) {
+            labelPaint.setColor(textColor);
+        }
+        if (valuePaint != null) {
+            valuePaint.setColor(valueColor);
+        }
         invalidate();
     }
 }

@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal"
-    android:background="#0A0A0A"
+    android:background="#0F0F0F"
     android:padding="16dp">
 
     <!-- LEFT COLUMN - Warning and Coolant -->
@@ -28,7 +28,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/system_status"
-                android:textColor="#00BCD4"
+                android:textColor="#00E5FF"
                 android:textSize="12sp"
                 android:gravity="center"
                 android:layout_marginBottom="16dp" />
@@ -177,7 +177,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/vehicle_status"
-                android:textColor="#00BCD4"
+                android:textColor="#00E5FF"
                 android:textSize="12sp"
                 android:gravity="center"
                 android:layout_marginBottom="16dp" />

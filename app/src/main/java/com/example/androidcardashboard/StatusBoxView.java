@@ -14,24 +14,30 @@ public class StatusBoxView extends View {
     private Paint textPaint;
     
     private String title = "";
-    private int backgroundColor = Color.parseColor("#1A1A1A");
-    private int borderColor = Color.parseColor("#333333");
-    private int textColor = Color.parseColor("#00BCD4");
+    private int backgroundColor;
+    private int borderColor;
+    private int textColor;
     
     private int centerX, centerY;
     private RectF backgroundRect;
+    private ThemeManager themeManager;
     
     public StatusBoxView(Context context) {
         super(context);
+        this.themeManager = new ThemeManager(context);
         init();
     }
     
     public StatusBoxView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        this.themeManager = new ThemeManager(context);
         init();
     }
     
     private void init() {
+        // Initialize theme colors
+        updateThemeColors();
+        
         // Background paint
         backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         backgroundPaint.setColor(backgroundColor);
@@ -48,6 +54,7 @@ public class StatusBoxView extends View {
         textPaint.setColor(textColor);
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setTextSize(24);
+        textPaint.setTypeface(themeManager.getPrimaryFont());
     }
     
     @Override
@@ -95,6 +102,23 @@ public class StatusBoxView extends View {
     public void setTextColor(int color) {
         this.textColor = color;
         textPaint.setColor(color);
+        invalidate();
+    }
+    
+    public void updateThemeColors() {
+        this.backgroundColor = themeManager.getContainerColor();
+        this.borderColor = themeManager.getInactiveColor();
+        this.textColor = themeManager.getPrimaryAccentColor();
+        
+        if (backgroundPaint != null) {
+            backgroundPaint.setColor(backgroundColor);
+        }
+        if (borderPaint != null) {
+            borderPaint.setColor(borderColor);
+        }
+        if (textPaint != null) {
+            textPaint.setColor(textColor);
+        }
         invalidate();
     }
 }

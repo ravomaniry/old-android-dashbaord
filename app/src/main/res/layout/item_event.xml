@@ -12,10 +12,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="INFO"
-        android:textColor="#00D9FF"
+        android:textColor="#00E5FF"
         android:textSize="8sp"
         android:textStyle="bold"
-        android:background="#2000D9FF"
+        android:background="#2000E5FF"
         android:padding="4dp"
         android:layout_marginRight="8dp" />
 
@@ -26,7 +26,7 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:text="Event message"
-        android:textColor="#FFFFFF"
+        android:textColor="#E0E0E0"
         android:textSize="10sp"
         android:layout_marginRight="8dp" />
 
@@ -36,7 +36,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="12:34"
-        android:textColor="#666666"
+        android:textColor="#CCCCCC"
         android:textSize="8sp" />
 
 </LinearLayout>

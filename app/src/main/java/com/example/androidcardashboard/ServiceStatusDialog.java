@@ -189,19 +189,19 @@ public class ServiceStatusDialog {
         private int getLevelColor(String level) {
             switch (level) {
                 case "INFO":
-                    return Color.parseColor("#00D9FF");
+                    return Color.parseColor("#40C4FF"); // Minimal theme secondary accent
                 case "STATUS":
-                    return Color.parseColor("#00FF41");
+                    return Color.parseColor("#00E676"); // Minimal theme success
                 case "CONFIG":
-                    return Color.parseColor("#FF9800");
+                    return Color.parseColor("#FFB74D"); // Minimal theme warning
                 case "TRIP":
-                    return Color.parseColor("#E91E63");
+                    return Color.parseColor("#00E5FF"); // Minimal theme primary accent
                 case "DATA":
-                    return Color.parseColor("#9C27B0");
+                    return Color.parseColor("#40C4FF"); // Minimal theme secondary accent
                 case "ERROR":
-                    return Color.parseColor("#FF5722");
+                    return Color.parseColor("#FF5252"); // Minimal theme danger
                 default:
-                    return Color.parseColor("#888888");
+                    return Color.parseColor("#CCCCCC"); // Minimal theme text secondary
             }
         }
     }

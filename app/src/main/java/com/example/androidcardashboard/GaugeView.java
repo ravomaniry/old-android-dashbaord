@@ -4,7 +4,9 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.RectF;
+import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.view.View;
 
@@ -26,10 +28,10 @@ public class GaugeView extends View {
     private float radius;
     private RectF progressRect;
     
-    // Color scheme
-    private int normalColor = Color.parseColor("#4CAF50");
-    private int warningColor = Color.parseColor("#FF9800");
-    private int dangerColor = Color.parseColor("#F44336");
+    // Color scheme - Theme-based colors
+    private int normalColor;
+    private int warningColor;
+    private int dangerColor;
     
     public enum GaugeType {
         TEMPERATURE,  // For coolant temperature
@@ -37,25 +39,37 @@ public class GaugeView extends View {
         GENERIC       // For other gauges
     }
     
-    // Theme colors
-    private int primaryColor = Color.parseColor("#00BCD4");
-    private int secondaryColor = Color.parseColor("#4CAF50");
-    private int backgroundColor = Color.parseColor("#0A0A0A");
+    // Theme colors - Dynamic based on current theme
+    private int primaryColor;
+    private int secondaryColor;
+    
+    // Gauge style
+    private ThemeManager.GaugeStyle gaugeStyle = ThemeManager.GaugeStyle.MINIMAL;
+    
+    // Font
+    private Typeface font = Typeface.DEFAULT;
+    private ThemeManager themeManager;
+    private int backgroundColor;
     
     public GaugeView(Context context) {
         super(context);
+        this.themeManager = new ThemeManager(context);
         init();
     }
     
     public GaugeView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        this.themeManager = new ThemeManager(context);
         init();
     }
     
     private void init() {
+        // Initialize theme colors
+        updateThemeColors();
+        
         // Background paint for the gauge ring
         backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        backgroundPaint.setColor(Color.parseColor("#404040"));
+        backgroundPaint.setColor(themeManager.getInactiveColor());
         backgroundPaint.setStyle(Paint.Style.STROKE);
         backgroundPaint.setStrokeWidth(15);
         
@@ -69,15 +83,17 @@ public class GaugeView extends View {
         textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setFakeBoldText(true);
+        textPaint.setTypeface(themeManager.getBoldFont());
         
         // Label paint
         labelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        labelPaint.setColor(Color.parseColor("#B0B0B0"));
+        labelPaint.setColor(themeManager.getTextSecondaryColor());
         labelPaint.setTextAlign(Paint.Align.CENTER);
+        labelPaint.setTypeface(themeManager.getPrimaryFont());
         
         // Center circle paint
         centerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        centerPaint.setColor(Color.parseColor("#1A1A1A"));
+        centerPaint.setColor(themeManager.getContainerColor());
         centerPaint.setStyle(Paint.Style.FILL);
     }
     
@@ -105,19 +121,22 @@ public class GaugeView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         
-        // Draw background circle
-        canvas.drawCircle(centerX, centerY, radius, backgroundPaint);
-        
         // Calculate progress and color
         float normalizedValue = (value - minValue) / (maxValue - minValue);
-        float sweepAngle = normalizedValue * 270; // 270 degrees for 3/4 circle
-        
-        // Set progress color based on value
         int progressColor = getProgressColor(normalizedValue);
-        progressPaint.setColor(progressColor);
         
-        // Draw progress arc
-        canvas.drawArc(progressRect, -135, sweepAngle, false, progressPaint);
+        // Draw gauge based on style
+        switch (gaugeStyle) {
+            case MINIMAL:
+                // Draw background circle for minimal theme
+                canvas.drawCircle(centerX, centerY, radius, backgroundPaint);
+                drawMinimalStyleGauge(canvas, normalizedValue, progressColor);
+                break;
+            case HTOP:
+                // No background circle for Linux theme
+                drawHtopStyleGauge(canvas, normalizedValue, progressColor);
+                break;
+        }
         
         // Draw center circle
         canvas.drawCircle(centerX, centerY, radius * 0.5f, centerPaint);
@@ -195,5 +214,138 @@ public class GaugeView extends View {
     
     public float getValue() {
         return value;
+    }
+    
+    public void setPrimaryColor(int color) {
+        this.primaryColor = color;
+        invalidate();
+    }
+    
+    public void setSecondaryColor(int color) {
+        this.secondaryColor = color;
+        invalidate();
+    }
+    
+    public void setThemeColors(int primaryColor, int secondaryColor) {
+        this.primaryColor = primaryColor;
+        this.secondaryColor = secondaryColor;
+        invalidate();
+    }
+    
+    public void setGaugeStyle(ThemeManager.GaugeStyle style) {
+        this.gaugeStyle = style;
+        invalidate();
+    }
+    
+    public void setFont(Typeface font) {
+        this.font = font;
+        if (textPaint != null) {
+            textPaint.setTypeface(themeManager.getBoldFont());
+        }
+        if (labelPaint != null) {
+            labelPaint.setTypeface(themeManager.getPrimaryFont());
+        }
+        invalidate();
+    }
+    
+    public void updateThemeColors() {
+        this.normalColor = themeManager.getSuccessColor();
+        this.warningColor = themeManager.getWarningColor();
+        this.dangerColor = themeManager.getDangerColor();
+        this.primaryColor = themeManager.getPrimaryAccentColor();
+        this.secondaryColor = themeManager.getSecondaryAccentColor();
+        this.backgroundColor = themeManager.getBackgroundColor();
+        
+        if (backgroundPaint != null) {
+            backgroundPaint.setColor(themeManager.getInactiveColor());
+        }
+        if (labelPaint != null) {
+            labelPaint.setColor(themeManager.getTextSecondaryColor());
+        }
+        if (centerPaint != null) {
+            centerPaint.setColor(themeManager.getContainerColor());
+        }
+        invalidate();
+    }
+    
+    private void drawHtopStyleGauge(Canvas canvas, float normalizedValue, int progressColor) {
+        // Linux terminal style with pentagon ticks (like htop)
+        int numTicks = 25; // More ticks with reduced spacing
+        int activeTicks = Math.round(normalizedValue * numTicks);
+        
+        Paint tickPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        tickPaint.setStyle(Paint.Style.FILL);
+        
+        for (int i = 0; i < numTicks; i++) {
+            float angle = (float) (-Math.PI * 1.25 + (i / (float) numTicks) * Math.PI * 1.5);
+            
+            // Only draw active ticks (skip inactive gray ticks)
+            if (i < activeTicks) {
+                tickPaint.setColor(progressColor);
+                // Draw pentagon tick
+                drawPentagonTick(canvas, centerX, centerY, angle, radius, tickPaint);
+            }
+        }
+    }
+    
+    private void drawPentagonTick(Canvas canvas, float centerX, float centerY, float angle, float radius, Paint paint) {
+        // Create rounded pentagon tick pointing inward (no sharp tip)
+        float tickLength = radius * 0.4f; // Much longer ticks - almost touch inner circle
+        float tickWidth = 6;   // Thinner ticks for pentagon shape
+        float innerRadius = radius * 0.5f; // Inner circle radius (matches center circle)
+        
+        // Calculate the five points of the rounded pentagon (no sharp tip)
+        // Inner edge (rounded, not sharp)
+        float innerX = centerX + (float) (Math.cos(angle) * innerRadius);
+        float innerY = centerY + (float) (Math.sin(angle) * innerRadius);
+        
+        // Base of pentagon (at outer edge)
+        float baseX = centerX + (float) (Math.cos(angle) * radius);
+        float baseY = centerY + (float) (Math.sin(angle) * radius);
+        
+        // Calculate perpendicular points for pentagon width at the base
+        float perpAngle1 = angle + (float) (Math.PI / 2);
+        float perpAngle2 = angle - (float) (Math.PI / 2);
+        
+        float width1X = baseX + (float) (Math.cos(perpAngle1) * (tickWidth / 2));
+        float width1Y = baseY + (float) (Math.sin(perpAngle1) * (tickWidth / 2));
+        float width2X = baseX + (float) (Math.cos(perpAngle2) * (tickWidth / 2));
+        float width2Y = baseY + (float) (Math.sin(perpAngle2) * (tickWidth / 2));
+        
+        // Calculate intermediate points for rounded pentagon shape
+        float midRadius = innerRadius + (radius - innerRadius) * 0.4f;
+        float midX = centerX + (float) (Math.cos(angle) * midRadius);
+        float midY = centerY + (float) (Math.sin(angle) * midRadius);
+        
+        float midWidth1X = midX + (float) (Math.cos(perpAngle1) * (tickWidth / 3));
+        float midWidth1Y = midY + (float) (Math.sin(perpAngle1) * (tickWidth / 3));
+        float midWidth2X = midX + (float) (Math.cos(perpAngle2) * (tickWidth / 3));
+        float midWidth2Y = midY + (float) (Math.sin(perpAngle2) * (tickWidth / 3));
+        
+        // Calculate inner edge points (rounded, not sharp)
+        float innerWidth1X = innerX + (float) (Math.cos(perpAngle1) * (tickWidth / 4));
+        float innerWidth1Y = innerY + (float) (Math.sin(perpAngle1) * (tickWidth / 4));
+        float innerWidth2X = innerX + (float) (Math.cos(perpAngle2) * (tickWidth / 4));
+        float innerWidth2Y = innerY + (float) (Math.sin(perpAngle2) * (tickWidth / 4));
+        
+        // Create rounded pentagon path (no sharp tip)
+        Path pentagonPath = new Path();
+        pentagonPath.moveTo(innerWidth1X, innerWidth1Y); // Inner edge 1 (rounded)
+        pentagonPath.lineTo(midWidth1X, midWidth1Y); // First intermediate point
+        pentagonPath.lineTo(width1X, width1Y); // Base edge 1
+        pentagonPath.lineTo(width2X, width2Y); // Base edge 2
+        pentagonPath.lineTo(midWidth2X, midWidth2Y); // Second intermediate point
+        pentagonPath.lineTo(innerWidth2X, innerWidth2Y); // Inner edge 2 (rounded)
+        pentagonPath.close();
+        
+        canvas.drawPath(pentagonPath, paint);
+    }
+    
+    private void drawMinimalStyleGauge(Canvas canvas, float normalizedValue, int progressColor) {
+        // Minimal style with smooth arc
+        float sweepAngle = normalizedValue * 270; // 270 degrees for 3/4 circle
+        progressPaint.setColor(progressColor);
+        progressPaint.setStrokeCap(Paint.Cap.ROUND);
+        canvas.drawArc(progressRect, -135, sweepAngle, false, progressPaint);
     }
 }

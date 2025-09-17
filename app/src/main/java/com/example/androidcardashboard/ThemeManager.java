@@ -1,13 +1,25 @@
 package com.example.androidcardashboard;
 
+import android.content.Context;
 import android.graphics.Color;
+import android.graphics.Typeface;
 
 public class ThemeManager {
     public enum ThemeType {
-        LINUX, CLASSIC, MODERN, TESLA
+        MINIMAL, LINUX
     }
     
-    private ThemeType currentTheme = ThemeType.LINUX;
+    public enum GaugeStyle {
+        MINIMAL, // Simple smooth arcs
+        HTOP     // Linux terminal style with ticks
+    }
+    
+    private ThemeType currentTheme = ThemeType.MINIMAL; // Start with Minimal as default
+    private FontManager fontManager;
+    
+    public ThemeManager(Context context) {
+        this.fontManager = FontManager.getInstance(context);
+    }
     
     public ThemeType getCurrentTheme() {
         return currentTheme;
@@ -15,17 +27,11 @@ public class ThemeManager {
     
     public void cycleTheme() {
         switch (currentTheme) {
-            case LINUX:
-                currentTheme = ThemeType.CLASSIC;
-                break;
-            case CLASSIC:
-                currentTheme = ThemeType.MODERN;
-                break;
-            case MODERN:
-                currentTheme = ThemeType.TESLA;
-                break;
-            case TESLA:
+            case MINIMAL:
                 currentTheme = ThemeType.LINUX;
+                break;
+            case LINUX:
+                currentTheme = ThemeType.MINIMAL;
                 break;
         }
     }
@@ -33,122 +39,175 @@ public class ThemeManager {
     // Color schemes for different themes
     public int getBackgroundColor() {
         switch (currentTheme) {
+            case MINIMAL:
+                return Color.parseColor("#0F0F0F");
             case LINUX:
                 return Color.parseColor("#0A0A0A");
-            case CLASSIC:
-                return Color.parseColor("#1A1A1A");
-            case MODERN:
-                return Color.parseColor("#0F0F0F");
-            case TESLA:
-                return Color.parseColor("#000000");
             default:
-                return Color.parseColor("#0A0A0A");
+                return Color.parseColor("#0F0F0F");
         }
     }
     
     public int getContainerColor() {
         switch (currentTheme) {
+            case MINIMAL:
+                return Color.parseColor("#1F1F1F");
             case LINUX:
                 return Color.parseColor("#1A1A1A");
-            case CLASSIC:
-                return Color.parseColor("#2A2A2A");
-            case MODERN:
-                return Color.parseColor("#1F1F1F");
-            case TESLA:
-                return Color.parseColor("#111111");
             default:
-                return Color.parseColor("#1A1A1A");
+                return Color.parseColor("#1F1F1F");
         }
     }
     
     public int getPrimaryAccentColor() {
         switch (currentTheme) {
-            case LINUX:
-                return Color.parseColor("#00BCD4"); // Cyan
-            case CLASSIC:
-                return Color.parseColor("#2196F3"); // Blue
-            case MODERN:
+            case MINIMAL:
                 return Color.parseColor("#00E5FF"); // Light Cyan
-            case TESLA:
-                return Color.parseColor("#FFFFFF"); // White
+            case LINUX:
+                return Color.parseColor("#00FF41"); // Terminal Green
             default:
-                return Color.parseColor("#00BCD4");
+                return Color.parseColor("#00E5FF");
         }
     }
     
     public int getSecondaryAccentColor() {
         switch (currentTheme) {
+            case MINIMAL:
+                return Color.parseColor("#40C4FF"); // Light Blue
             case LINUX:
-                return Color.parseColor("#4CAF50"); // Green
-            case CLASSIC:
-                return Color.parseColor("#FF9800"); // Orange
-            case MODERN:
-                return Color.parseColor("#00BCD4"); // Cyan
-            case TESLA:
-                return Color.parseColor("#CCCCCC"); // Light Gray
+                return Color.parseColor("#00D9FF"); // Terminal Cyan
             default:
-                return Color.parseColor("#4CAF50");
+                return Color.parseColor("#40C4FF");
         }
     }
     
     public int getTextPrimaryColor() {
         switch (currentTheme) {
+            case MINIMAL:
+                return Color.parseColor("#E0E0E0");
             case LINUX:
-                return Color.parseColor("#FFFFFF");
-            case CLASSIC:
-                return Color.parseColor("#FFFFFF");
-            case MODERN:
-                return Color.parseColor("#FFFFFF");
-            case TESLA:
-                return Color.parseColor("#FFFFFF");
+                return Color.parseColor("#00D9FF"); // Terminal cyan text
             default:
-                return Color.parseColor("#FFFFFF");
+                return Color.parseColor("#E0E0E0");
         }
     }
     
     public int getTextSecondaryColor() {
         switch (currentTheme) {
+            case MINIMAL:
+                return Color.parseColor("#CCCCCC");
             case LINUX:
                 return Color.parseColor("#888888");
-            case CLASSIC:
-                return Color.parseColor("#AAAAAA");
-            case MODERN:
-                return Color.parseColor("#CCCCCC");
-            case TESLA:
-                return Color.parseColor("#999999");
             default:
-                return Color.parseColor("#888888");
+                return Color.parseColor("#CCCCCC");
         }
     }
     
     public int getSuccessColor() {
-        return Color.parseColor("#4CAF50");
+        switch (currentTheme) {
+            case MINIMAL:
+                return Color.parseColor("#00E676"); // Light Green
+            case LINUX:
+                return Color.parseColor("#00FF41"); // Terminal Green
+            default:
+                return Color.parseColor("#00E676");
+        }
     }
     
     public int getWarningColor() {
-        return Color.parseColor("#FF9800");
+        switch (currentTheme) {
+            case MINIMAL:
+                return Color.parseColor("#FFB74D"); // Light Orange
+            case LINUX:
+                return Color.parseColor("#FF9800"); // Orange
+            default:
+                return Color.parseColor("#FFB74D");
+        }
     }
     
     public int getDangerColor() {
-        return Color.parseColor("#F44336");
+        switch (currentTheme) {
+            case MINIMAL:
+                return Color.parseColor("#FF5252"); // Light Red
+            case LINUX:
+                return Color.parseColor("#FF5722"); // Terminal Red
+            default:
+                return Color.parseColor("#FF5252");
+        }
     }
     
     public int getInactiveColor() {
-        return Color.parseColor("#333333");
+        switch (currentTheme) {
+            case MINIMAL:
+                return Color.parseColor("#424242");
+            case LINUX:
+                return Color.parseColor("#444444");
+            default:
+                return Color.parseColor("#424242");
+        }
     }
     
     public String getThemeName() {
         switch (currentTheme) {
+            case MINIMAL:
+                return "Minimal";
             case LINUX:
                 return "Linux";
-            case CLASSIC:
-                return "Classic";
-            case MODERN:
-                return "Modern";
-            case TESLA:
-                return "Tesla";
             default:
-                return "Linux";
+                return "Minimal";
+        }
+    }
+    
+    public GaugeStyle getGaugeStyle() {
+        switch (currentTheme) {
+            case MINIMAL:
+                return GaugeStyle.MINIMAL;
+            case LINUX:
+                return GaugeStyle.HTOP;
+            default:
+                return GaugeStyle.MINIMAL;
+        }
+    }
+    
+    /**
+     * Get the primary font for the current theme
+     */
+    public Typeface getPrimaryFont() {
+        switch (currentTheme) {
+            case MINIMAL:
+                return Typeface.DEFAULT; // Use system default for minimal theme
+            case LINUX:
+                return fontManager.getFiraCodeRegular(); // Use Fira Code for Linux theme
+            default:
+                return Typeface.DEFAULT;
+        }
+    }
+    
+    /**
+     * Get the bold font for the current theme
+     */
+    public Typeface getBoldFont() {
+        switch (currentTheme) {
+            case MINIMAL:
+                return Typeface.DEFAULT_BOLD; // Use system default bold for minimal theme
+            case LINUX:
+                return fontManager.getFiraCodeBold(); // Use Fira Code Bold for Linux theme
+            default:
+                return Typeface.DEFAULT_BOLD;
+        }
+    }
+    
+    /**
+     * Get the medium font for the current theme
+     */
+    public Typeface getMediumFont() {
+        switch (currentTheme) {
+            case MINIMAL:
+                return Typeface.DEFAULT; // Use system default for minimal theme
+            case LINUX:
+                return fontManager.getFiraCodeMedium(); // Use Fira Code Medium for Linux theme
+            default:
+                return Typeface.DEFAULT;
         }
     }
 }

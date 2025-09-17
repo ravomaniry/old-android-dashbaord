@@ -173,7 +173,7 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
     
     private void initializeServices() {
         // Initialize theme manager
-        themeManager = new ThemeManager();
+        themeManager = new ThemeManager(this);
         
         // Initialize trip calculator
         tripCalculator = new TripCalculator();
@@ -277,11 +277,11 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
     
     private void updateBatteryIndicator() {
         if (batteryVoltage < 11.5) {
-            batteryIndicator.setActiveColor(0xFFF44336); // Red
+            batteryIndicator.setActiveColor(themeManager.getDangerColor()); // Red
         } else if (batteryVoltage < 12.2) {
-            batteryIndicator.setActiveColor(0xFFFF9800); // Orange
+            batteryIndicator.setActiveColor(themeManager.getWarningColor()); // Orange
         } else {
-            batteryIndicator.setActiveColor(0xFF4CAF50); // Green
+            batteryIndicator.setActiveColor(themeManager.getSuccessColor()); // Green
         }
         batteryIndicator.setActive(true);
     }
@@ -303,34 +303,49 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
         int secondaryColor = themeManager.getSecondaryAccentColor();
         int backgroundColor = themeManager.getBackgroundColor();
         int containerColor = themeManager.getContainerColor();
+        int textPrimaryColor = themeManager.getTextPrimaryColor();
+        int textSecondaryColor = themeManager.getTextSecondaryColor();
         
         // Debug: Log theme change
         android.util.Log.d("ThemeManager", "Theme changed to: " + themeManager.getThemeName());
         
-        // Update status indicator colors
-        // Oil indicator: Green when OK, Red when critical
-        updateOilIndicatorColor();
-        batteryIndicator.setActiveColor(themeManager.getSuccessColor());
-        httpIndicator.setActiveColor(primaryColor);
+        // Update speedometer theme
+        speedometer.updateThemeColors();
+        speedometer.setGaugeStyle(themeManager.getGaugeStyle());
+        speedometer.setFont(themeManager.getBoldFont());
         
-        drlIndicator.setActiveColor(primaryColor); // Cyan for light icons
-        lowBeamIndicator.setActiveColor(primaryColor); // Cyan for light icons
-        highBeamIndicator.setActiveColor(primaryColor); // Cyan for light icons
-        hazardIndicator.setActiveColor(themeManager.getWarningColor());
-        leftTurnIndicator.setActiveColor(themeManager.getWarningColor());
-        rightTurnIndicator.setActiveColor(themeManager.getWarningColor());
+        // Update gauge themes
+        coolantGauge.updateThemeColors();
+        coolantGauge.setGaugeStyle(themeManager.getGaugeStyle());
+        coolantGauge.setFont(themeManager.getBoldFont());
+        fuelGauge.updateThemeColors();
+        fuelGauge.setGaugeStyle(themeManager.getGaugeStyle());
+        fuelGauge.setFont(themeManager.getBoldFont());
+        
+        // Update trip detail themes
+        distanceDetail.updateThemeColors();
+        distanceDetail.setFont(themeManager.getBoldFont());
+        fuelUsageDetail.updateThemeColors();
+        fuelUsageDetail.setFont(themeManager.getBoldFont());
+        avgTempDetail.updateThemeColors();
+        avgTempDetail.setFont(themeManager.getBoldFont());
+        avgSpeedDetail.updateThemeColors();
+        avgSpeedDetail.setFont(themeManager.getBoldFont());
+        
+        // Update status indicator colors
+        updateOilIndicatorColor();
+        batteryIndicator.updateThemeColors();
+        httpIndicator.updateThemeColors();
+        
+        drlIndicator.updateThemeColors();
+        lowBeamIndicator.updateThemeColors();
+        highBeamIndicator.updateThemeColors();
+        hazardIndicator.updateThemeColors();
+        leftTurnIndicator.updateThemeColors();
+        rightTurnIndicator.updateThemeColors();
         
         // Update background colors
         findViewById(android.R.id.content).setBackgroundColor(backgroundColor);
-        
-        // Update custom views with new theme colors
-        if (speedometer != null) {
-            speedometer.setThemeColors(primaryColor, secondaryColor, backgroundColor);
-        }
-        // Note: GaugeView setThemeColors method will be added later
-        
-        // Force UI update
-        updateUI();
     }
     
     private void setupFullscreen() {
