@@ -127,6 +127,7 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
         
         // Initialize status indicator labels
         oilWarningIndicator.setLabel(getString(R.string.oil_warning));
+        oilWarningIndicator.setAlwaysShowColor(true); // Always show color for oil indicator
         batteryIndicator.setLabel(getString(R.string.battery));
         httpIndicator.setLabel(getString(R.string.wifi));
         drlIndicator.setLabel(getString(R.string.drl));
@@ -260,6 +261,7 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
         
         // Update status indicators
         oilWarningIndicator.setActive(oilWarning);
+        updateOilIndicatorColor(); // Set proper color based on oil state
         updateBatteryIndicator();
         httpIndicator.setActive(httpConnected);
         drlIndicator.setActive(drlOn);
@@ -284,6 +286,16 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
         batteryIndicator.setActive(true);
     }
     
+    private void updateOilIndicatorColor() {
+        if (oilWarning) {
+            // Critical state - Red
+            oilWarningIndicator.setActiveColor(themeManager.getDangerColor());
+        } else {
+            // OK state - Green
+            oilWarningIndicator.setActiveColor(themeManager.getSuccessColor());
+        }
+    }
+    
     
     private void updateTheme() {
         // Update colors based on current theme
@@ -296,13 +308,14 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
         android.util.Log.d("ThemeManager", "Theme changed to: " + themeManager.getThemeName());
         
         // Update status indicator colors
-        oilWarningIndicator.setActiveColor(themeManager.getDangerColor());
+        // Oil indicator: Green when OK, Red when critical
+        updateOilIndicatorColor();
         batteryIndicator.setActiveColor(themeManager.getSuccessColor());
         httpIndicator.setActiveColor(primaryColor);
         
-        drlIndicator.setActiveColor(secondaryColor);
-        lowBeamIndicator.setActiveColor(secondaryColor);
-        highBeamIndicator.setActiveColor(secondaryColor);
+        drlIndicator.setActiveColor(primaryColor); // Cyan for light icons
+        lowBeamIndicator.setActiveColor(primaryColor); // Cyan for light icons
+        highBeamIndicator.setActiveColor(primaryColor); // Cyan for light icons
         hazardIndicator.setActiveColor(themeManager.getWarningColor());
         leftTurnIndicator.setActiveColor(themeManager.getWarningColor());
         rightTurnIndicator.setActiveColor(themeManager.getWarningColor());
@@ -539,6 +552,12 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
                     // Animate status indicators based on animation progress
                     oilWarning = animationProgress > 0.7; // Warning at high values
                     batteryVoltage = 12.0 + animationProgress * 2.0; // 12 to 14V
+                    
+                    // Animate all 6 light icons
+                    drlOn = animationProgress > 0.1; // DRL on most of the time
+                    lowBeamOn = animationProgress > 0.4 && animationProgress < 0.8; // Low beam in middle range
+                    highBeamOn = animationProgress > 0.6 && animationProgress < 0.9; // High beam in upper range
+                    hazardLights = animationProgress > 0.8; // Hazard lights at high values
                     
                     // Animate turn signals with different patterns
                     if (animationProgress > 0.3 && animationProgress < 0.5) {

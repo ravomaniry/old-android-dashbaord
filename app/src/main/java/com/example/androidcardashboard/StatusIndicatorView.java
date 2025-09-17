@@ -21,6 +21,7 @@ public class StatusIndicatorView extends View implements OnClickListener {
     private int activeColor = Color.parseColor("#00BCD4");
     private int inactiveColor = Color.parseColor("#404040");
     private int textColor = Color.parseColor("#B0B0B0");
+    private boolean alwaysShowColor = false; // For indicators that should show color even when inactive
     
     private boolean isBlinking = false;
     private boolean blinkState = false;
@@ -88,7 +89,12 @@ public class StatusIndicatorView extends View implements OnClickListener {
                 indicatorPaint.setColor(activeColor);
             }
         } else {
-            indicatorPaint.setColor(inactiveColor);
+            // For indicators that should always show color (like oil), use activeColor when inactive
+            if (alwaysShowColor) {
+                indicatorPaint.setColor(activeColor);
+            } else {
+                indicatorPaint.setColor(inactiveColor);
+            }
         }
         
         // Draw icon based on label
@@ -96,6 +102,8 @@ public class StatusIndicatorView extends View implements OnClickListener {
         
         // Draw label closer to the indicator to save space
         if (!label.isEmpty()) {
+            // Set text color to match the indicator color
+            textPaint.setColor(indicatorPaint.getColor());
             canvas.drawText(label, centerX, centerY + indicatorRadius * 1.2f, textPaint);
         }
     }
@@ -144,23 +152,107 @@ public class StatusIndicatorView extends View implements OnClickListener {
     }
     
     private void drawOilIcon(Canvas canvas, float x, float y, float size) {
-        // Oil drop icon (opacity icon style)
+        // Oil can icon - step 2: body + T-shaped cover
         Paint oilPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         oilPaint.setColor(indicatorPaint.getColor());
         oilPaint.setStyle(Paint.Style.FILL);
         
-        // Main drop shape
-        Path oilPath = new Path();
-        oilPath.moveTo(x, y - size * 0.5f);
-        oilPath.quadTo(x + size * 0.3f, y - size * 0.2f, x + size * 0.2f, y + size * 0.1f);
-        oilPath.quadTo(x, y + size * 0.4f, x - size * 0.2f, y + size * 0.1f);
-        oilPath.quadTo(x - size * 0.3f, y - size * 0.2f, x, y - size * 0.5f);
-        canvas.drawPath(oilPath, oilPaint);
+        // Main can body - simple rounded rectangle
+        float canWidth = size * 0.6f;
+        float canHeight = size * 0.6f; // Reduced from 0.8f to 0.6f
+        float cornerRadius = size * 0.1f;
         
-        // Highlight
-        oilPaint.setColor(Color.WHITE);
-        oilPaint.setAlpha(120);
-        canvas.drawCircle(x, y - size * 0.1f, size * 0.15f, oilPaint);
+        android.graphics.RectF canRect = new android.graphics.RectF(
+            x - canWidth * 0.5f, y - canHeight * 0.5f, 
+            x + canWidth * 0.5f, y + canHeight * 0.5f);
+        canvas.drawRoundRect(canRect, cornerRadius, cornerRadius, oilPaint);
+        
+        // T-shaped cover on top - smaller width than body
+        float coverWidth = size * 0.4f; // Smaller than body width
+        float coverHeight = size * 0.15f; // Short height for the cover
+        float coverTop = y - canHeight * 0.5f - coverHeight * 0.5f - size * 0.05f; // Position above body, moved up
+        
+        // Horizontal part of T (top)
+        android.graphics.RectF topRect = new android.graphics.RectF(
+            x - coverWidth * 0.5f, coverTop - coverHeight * 0.3f,
+            x + coverWidth * 0.5f, coverTop + coverHeight * 0.3f);
+        canvas.drawRoundRect(topRect, cornerRadius * 0.5f, cornerRadius * 0.5f, oilPaint);
+        
+        // Vertical part of T (center stem)
+        float stemWidth = size * 0.08f;
+        android.graphics.RectF stemRect = new android.graphics.RectF(
+            x - stemWidth * 0.5f, coverTop - coverHeight * 0.3f,
+            x + stemWidth * 0.5f, coverTop + coverHeight * 0.3f);
+        canvas.drawRoundRect(stemRect, cornerRadius * 0.3f, cornerRadius * 0.3f, oilPaint);
+        
+        // C-shaped handle from top left of body, going left, down, and back to center left
+        Paint handlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        handlePaint.setColor(indicatorPaint.getColor());
+        handlePaint.setStyle(Paint.Style.STROKE);
+        handlePaint.setStrokeWidth(size * 0.08f);
+        handlePaint.setStrokeCap(Paint.Cap.ROUND);
+        
+        // Calculate handle positions
+        float handleStartX = x - canWidth * 0.5f - size * 0.05f; // Left side of body - offset
+        float handleTopY = y - canHeight * 0.3f; // Top left of body
+        float handleBottomY = y + canHeight * 0.1f; // Center left of body
+        float handleRadius = size * 0.12f; // Radius of the C-shape curve
+        
+        // Draw C-shaped handle as an arc (going left, down, and back)
+        android.graphics.RectF handleRect = new android.graphics.RectF(
+            handleStartX - handleRadius, handleTopY,
+            handleStartX + handleRadius, handleBottomY + handleRadius);
+        canvas.drawArc(handleRect, 90f, 180f, false, handlePaint);
+        
+        // Triangular neck/spout from right side of body
+        Paint neckPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        neckPaint.setColor(indicatorPaint.getColor());
+        neckPaint.setStyle(Paint.Style.FILL);
+        
+        // Calculate neck positions
+        float neckStartY = y - canHeight * 0.25f; // 25% from top of body
+        float neckEndY = y + canHeight * 0.25f;  // 25% from bottom of body
+        float neckBaseX = x + canWidth * 0.5f;   // Right side of body
+        float neckTipX = neckBaseX + size * 0.35f; // Tip extends outward (longer)
+        
+        // Create triangular path for the neck
+        Path neckPath = new Path();
+        neckPath.moveTo(neckBaseX, neckStartY);      // Top-left corner (base against body)
+        neckPath.lineTo(neckTipX, neckStartY);        // Tip horizontally aligned with highest point
+        neckPath.lineTo(neckBaseX, neckEndY);       // Bottom-left corner (base against body)
+        neckPath.close();                            // Close the triangle
+        
+        canvas.drawPath(neckPath, neckPaint);
+        
+        // Oil drop below the tip of the neck
+        Paint dropPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        dropPaint.setColor(indicatorPaint.getColor());
+        dropPaint.setStyle(Paint.Style.FILL);
+        
+        // Calculate drop positions
+        float dropTopY = neckStartY + size * 0.08f; // Few pixels below the tip
+        float dropBottomY = dropTopY + size * 0.15f; // Drop height
+        float dropCenterX = neckTipX; // Centered below the tip
+        float dropWidth = size * 0.12f; // Drop width
+        
+        // Create water drop path (pointy top, circular bottom)
+        Path dropPath = new Path();
+        dropPath.moveTo(dropCenterX, dropTopY); // Start at top point
+        
+        // Left side curve
+        dropPath.quadTo(dropCenterX - dropWidth * 0.3f, dropTopY + size * 0.05f,
+                        dropCenterX - dropWidth * 0.5f, dropBottomY - size * 0.03f);
+        
+        // Bottom curve (circular)
+        dropPath.quadTo(dropCenterX, dropBottomY,
+                        dropCenterX + dropWidth * 0.5f, dropBottomY - size * 0.03f);
+        
+        // Right side curve
+        dropPath.quadTo(dropCenterX + dropWidth * 0.3f, dropTopY + size * 0.05f,
+                        dropCenterX, dropTopY);
+        
+        dropPath.close();
+        canvas.drawPath(dropPath, dropPaint);
     }
     
     private void drawBatteryIcon(Canvas canvas, float x, float y, float size) {
@@ -196,39 +288,36 @@ public class StatusIndicatorView extends View implements OnClickListener {
     }
     
     private void drawWifiIcon(Canvas canvas, float x, float y, float size) {
-        // WiFi icon (signal strength style)
+        // WiFi icon inspired by SVG design - clean signal arcs
         Paint wifiPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         wifiPaint.setColor(indicatorPaint.getColor());
         wifiPaint.setStyle(Paint.Style.STROKE);
-        wifiPaint.setStrokeWidth(size * 0.06f);
+        wifiPaint.setStrokeWidth(size * 0.08f);
+        wifiPaint.setStrokeCap(Paint.Cap.ROUND);
         
-        // WiFi signal arcs - more distinct design
         float centerX = x;
-        float centerY = y + size * 0.05f;
+        float centerY = y;
         
-        // Draw 4 arcs representing WiFi signal strength (more visible)
+        // Draw 4 concentric arcs representing WiFi signal strength
+        // Each arc is progressively larger and positioned higher
         for (int i = 0; i < 4; i++) {
-            float arcRadius = size * 0.15f + (i * size * 0.08f);
+            float arcRadius = size * 0.2f + (i * size * 0.12f);
             float startAngle = 225f; // Start from bottom-left
             float sweepAngle = 90f;   // Quarter circle
             
+            // Position each arc so they appear to emanate from the center point
+            float arcCenterY = centerY + size * 0.1f;
+            
             android.graphics.RectF rect = new android.graphics.RectF(
-                centerX - arcRadius, centerY - arcRadius, 
-                centerX + arcRadius, centerY + arcRadius);
+                centerX - arcRadius, arcCenterY - arcRadius, 
+                centerX + arcRadius, arcCenterY + arcRadius);
             canvas.drawArc(rect, startAngle, sweepAngle, false, wifiPaint);
         }
         
-        // Draw center dot (WiFi router indicator)
+        // Draw center dot (WiFi access point indicator)
         wifiPaint.setStyle(Paint.Style.FILL);
-        canvas.drawCircle(centerX, centerY + size * 0.12f, size * 0.04f, wifiPaint);
-        
-        // Draw antenna lines for more WiFi-like appearance
-        wifiPaint.setStyle(Paint.Style.STROKE);
-        wifiPaint.setStrokeWidth(size * 0.04f);
-        canvas.drawLine(centerX - size * 0.08f, centerY + size * 0.12f, 
-                      centerX - size * 0.12f, centerY + size * 0.08f, wifiPaint);
-        canvas.drawLine(centerX + size * 0.08f, centerY + size * 0.12f, 
-                      centerX + size * 0.12f, centerY + size * 0.08f, wifiPaint);
+        float dotRadius = size * 0.06f;
+        canvas.drawCircle(centerX, centerY + size * 0.1f, dotRadius, wifiPaint);
     }
     
     private void drawGpsIcon(Canvas canvas, float x, float y, float size) {
@@ -274,51 +363,183 @@ public class StatusIndicatorView extends View implements OnClickListener {
     }
     
     private void drawLowBeamIcon(Canvas canvas, float x, float y, float size) {
-        // Low beam icon - downward light
-        canvas.drawRect(x - size * 0.3f, y - size * 0.2f, x + size * 0.3f, y + size * 0.2f, indicatorPaint);
-        canvas.drawRect(x - size * 0.1f, y + size * 0.2f, x + size * 0.1f, y + size * 0.4f, indicatorPaint);
+        // Low beam icon - lamp pointing to the right (same as high beam but with downward light rays)
+        Paint lampPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        lampPaint.setColor(indicatorPaint.getColor());
+        lampPaint.setStyle(Paint.Style.FILL);
+        
+        // Calculate lamp dimensions - fill entire canvas height
+        float lampWidth = size * 0.6f; // Width of the lamp
+        float lampHeight = size; // Fill entire canvas height
+        float leftEdge = x - size * 0.5f; // Left edge touches canvas edge
+        float rightEdge = leftEdge + lampWidth; // Right edge
+        float topEdge = y - lampHeight * 0.5f; // Top edge (full height)
+        float bottomEdge = y + lampHeight * 0.5f; // Bottom edge (full height)
+        
+        // Draw the rectangular part (right side) with gap from circular part
+        float bodyGap = size * 0.05f; // Small gap between circular and rectangular parts
+        float rectLeft = leftEdge + size * 0.5f + bodyGap; // Start after the circular part + gap
+        android.graphics.RectF rectPart = new android.graphics.RectF(
+            rectLeft, topEdge, rightEdge, bottomEdge);
+        canvas.drawRoundRect(rectPart, size * 0.05f, size * 0.05f, lampPaint);
+        
+        // Draw the perfect semicircle on the left - diameter same as canvas height
+        float circleRadius = size * 0.5f; // Radius is half the canvas height (diameter = canvas height)
+        float circleCenterX = leftEdge + circleRadius;
+        float circleCenterY = y;
+        
+        // Create a path for the semicircle
+        Path semicirclePath = new Path();
+        android.graphics.RectF arcRect = new android.graphics.RectF(
+            circleCenterX - circleRadius, circleCenterY - circleRadius,
+            circleCenterX + circleRadius, circleCenterY + circleRadius);
+        semicirclePath.addArc(arcRect, 90f, 180f); // 180 degrees starting from top
+        canvas.drawPath(semicirclePath, lampPaint);
+        
+        // Draw 3 light rays pointing down and right (opposite of high beam)
+        Paint rayPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        rayPaint.setColor(indicatorPaint.getColor());
+        rayPaint.setStyle(Paint.Style.STROKE);
+        rayPaint.setStrokeWidth(size * 0.06f);
+        rayPaint.setStrokeCap(Paint.Cap.ROUND);
+        
+        // Calculate ray positions
+        float gap = size * 0.08f; // Small gap from the flat side
+        float rayStartX = rightEdge + gap; // Start after the gap
+        float rayLength = size * 0.3f; // Length of the rays
+        
+        // Draw 3 rays at different angles pointing downward
+        for (int i = 0; i < 3; i++) {
+            float rayY = y - size * 0.2f + (i * size * 0.2f); // Spread vertically
+            float rayEndX = rayStartX + rayLength;
+            float rayEndY = rayY + rayLength * 0.3f; // Angle down and right (opposite of high beam)
+            
+            canvas.drawLine(rayStartX, rayY, rayEndX, rayEndY, rayPaint);
+        }
     }
     
     private void drawHighBeamIcon(Canvas canvas, float x, float y, float size) {
-        // High beam icon - upward light
-        canvas.drawRect(x - size * 0.3f, y - size * 0.2f, x + size * 0.3f, y + size * 0.2f, indicatorPaint);
-        canvas.drawRect(x - size * 0.1f, y - size * 0.4f, x + size * 0.1f, y - size * 0.2f, indicatorPaint);
+        // High beam icon - lamp pointing to the right (fills canvas height, perfectly circular left edge)
+        Paint lampPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        lampPaint.setColor(indicatorPaint.getColor());
+        lampPaint.setStyle(Paint.Style.FILL);
+        
+        // Calculate lamp dimensions - fill entire canvas height
+        float lampWidth = size * 0.6f; // Width of the lamp
+        float lampHeight = size; // Fill entire canvas height
+        float leftEdge = x - size * 0.5f; // Left edge touches canvas edge
+        float rightEdge = leftEdge + lampWidth; // Right edge
+        float topEdge = y - lampHeight * 0.5f; // Top edge (full height)
+        float bottomEdge = y + lampHeight * 0.5f; // Bottom edge (full height)
+        
+        // Draw the rectangular part (right side) with gap from circular part
+        float bodyGap = size * 0.05f; // Small gap between circular and rectangular parts
+        float rectLeft = leftEdge + size * 0.5f + bodyGap; // Start after the circular part + gap
+        android.graphics.RectF rectPart = new android.graphics.RectF(
+            rectLeft, topEdge, rightEdge, bottomEdge);
+        canvas.drawRoundRect(rectPart, size * 0.05f, size * 0.05f, lampPaint);
+        
+        // Draw the perfect semicircle on the left - diameter same as canvas height
+        float circleRadius = size * 0.5f; // Radius is half the canvas height (diameter = canvas height)
+        float circleCenterX = leftEdge + circleRadius;
+        float circleCenterY = y;
+        
+        // Create a path for the semicircle
+        Path semicirclePath = new Path();
+        android.graphics.RectF arcRect = new android.graphics.RectF(
+            circleCenterX - circleRadius, circleCenterY - circleRadius,
+            circleCenterX + circleRadius, circleCenterY + circleRadius);
+        semicirclePath.addArc(arcRect, 90f, 180f); // 180 degrees starting from top
+        canvas.drawPath(semicirclePath, lampPaint);
+        
+        // Draw 3 light rays pointing up and right
+        Paint rayPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        rayPaint.setColor(indicatorPaint.getColor());
+        rayPaint.setStyle(Paint.Style.STROKE);
+        rayPaint.setStrokeWidth(size * 0.06f);
+        rayPaint.setStrokeCap(Paint.Cap.ROUND);
+        
+        // Calculate ray positions
+        float gap = size * 0.08f; // Small gap from the flat side
+        float rayStartX = rightEdge + gap; // Start after the gap
+        float rayLength = size * 0.3f; // Length of the rays
+        
+        // Draw 3 rays at different angles
+        for (int i = 0; i < 3; i++) {
+            float rayY = y - size * 0.2f + (i * size * 0.2f); // Spread vertically
+            float rayEndX = rayStartX + rayLength;
+            float rayEndY = rayY - rayLength * 0.3f; // Angle up and right
+            
+            canvas.drawLine(rayStartX, rayY, rayEndX, rayEndY, rayPaint);
+        }
     }
     
     private void drawHazardIcon(Canvas canvas, float x, float y, float size) {
-        // Hazard icon - triangle with exclamation
-        float[] triangle = {
-            x, y - size * 0.4f,
-            x - size * 0.3f, y + size * 0.3f,
-            x + size * 0.3f, y + size * 0.3f
-        };
-        canvas.drawLines(triangle, indicatorPaint);
-        canvas.drawRect(x - size * 0.05f, y - size * 0.1f, x + size * 0.05f, y + size * 0.1f, indicatorPaint);
-        canvas.drawCircle(x, y + size * 0.2f, size * 0.05f, indicatorPaint);
+        // Hazard icon - warning triangle with exclamation mark (inspired by SVG)
+        Paint hazardPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        hazardPaint.setColor(indicatorPaint.getColor());
+        hazardPaint.setStyle(Paint.Style.STROKE);
+        hazardPaint.setStrokeWidth(size * 0.08f);
+        hazardPaint.setStrokeCap(Paint.Cap.ROUND);
+        hazardPaint.setStrokeJoin(Paint.Join.ROUND);
+        
+        // Draw the warning triangle outline
+        Path trianglePath = new Path();
+        float triangleHeight = size * 0.6f;
+        float triangleWidth = size * 0.5f;
+        
+        // Triangle points: top, bottom-left, bottom-right
+        trianglePath.moveTo(x, y - triangleHeight * 0.4f);
+        trianglePath.lineTo(x - triangleWidth * 0.5f, y + triangleHeight * 0.3f);
+        trianglePath.lineTo(x + triangleWidth * 0.5f, y + triangleHeight * 0.3f);
+        trianglePath.close();
+        
+        canvas.drawPath(trianglePath, hazardPaint);
+        
+        // Draw the exclamation mark inside
+        Paint exclamationPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        exclamationPaint.setColor(indicatorPaint.getColor());
+        exclamationPaint.setStyle(Paint.Style.FILL);
+        
+        // Vertical line of exclamation mark
+        float lineWidth = size * 0.06f;
+        float lineHeight = size * 0.25f;
+        canvas.drawRect(x - lineWidth * 0.5f, y - lineHeight * 0.3f, 
+                       x + lineWidth * 0.5f, y + lineHeight * 0.2f, exclamationPaint);
+        
+        // Dot at bottom of exclamation mark
+        float dotRadius = size * 0.08f;
+        canvas.drawCircle(x, y + lineHeight * 0.4f, dotRadius, exclamationPaint);
     }
     
     private void drawLeftTurnIcon(Canvas canvas, float x, float y, float size) {
-        // Left turn arrow
-        float[] arrow = {
-            x + size * 0.2f, y - size * 0.3f,
-            x - size * 0.2f, y,
-            x + size * 0.2f, y + size * 0.3f,
-            x + size * 0.1f, y + size * 0.1f,
-            x + size * 0.1f, y - size * 0.1f
-        };
-        canvas.drawLines(arrow, indicatorPaint);
+        // Draw a clean left arrow using just the arrow head lines
+        Paint arrowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        arrowPaint.setColor(indicatorPaint.getColor());
+        arrowPaint.setStyle(Paint.Style.STROKE);
+        arrowPaint.setStrokeWidth(size * 0.15f);
+        arrowPaint.setStrokeCap(Paint.Cap.ROUND);
+        
+        // Left arrow: < (just the arrow head)
+        // Top diagonal line
+        canvas.drawLine(x + size * 0.2f, y - size * 0.3f, x - size * 0.2f, y, arrowPaint);
+        // Bottom diagonal line  
+        canvas.drawLine(x + size * 0.2f, y + size * 0.3f, x - size * 0.2f, y, arrowPaint);
     }
     
     private void drawRightTurnIcon(Canvas canvas, float x, float y, float size) {
-        // Right turn arrow
-        float[] arrow = {
-            x - size * 0.2f, y - size * 0.3f,
-            x + size * 0.2f, y,
-            x - size * 0.2f, y + size * 0.3f,
-            x - size * 0.1f, y + size * 0.1f,
-            x - size * 0.1f, y - size * 0.1f
-        };
-        canvas.drawLines(arrow, indicatorPaint);
+        // Draw a clean right arrow using just the arrow head lines
+        Paint arrowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        arrowPaint.setColor(indicatorPaint.getColor());
+        arrowPaint.setStyle(Paint.Style.STROKE);
+        arrowPaint.setStrokeWidth(size * 0.15f);
+        arrowPaint.setStrokeCap(Paint.Cap.ROUND);
+        
+        // Right arrow: > (just the arrow head)
+        // Top diagonal line
+        canvas.drawLine(x - size * 0.2f, y - size * 0.3f, x + size * 0.2f, y, arrowPaint);
+        // Bottom diagonal line
+        canvas.drawLine(x - size * 0.2f, y + size * 0.3f, x + size * 0.2f, y, arrowPaint);
     }
     
     public void setActive(boolean active) {
@@ -338,6 +559,11 @@ public class StatusIndicatorView extends View implements OnClickListener {
     
     public void setInactiveColor(int color) {
         this.inactiveColor = color;
+        invalidate();
+    }
+    
+    public void setAlwaysShowColor(boolean alwaysShowColor) {
+        this.alwaysShowColor = alwaysShowColor;
         invalidate();
     }
     
