@@ -36,13 +36,13 @@ public class StatusIndicatorView extends View implements OnClickListener {
     
     public StatusIndicatorView(Context context) {
         super(context);
-        this.themeManager = new ThemeManager(context);
+        this.themeManager = ThemeManager.getInstance(context);
         init();
     }
     
     public StatusIndicatorView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        this.themeManager = new ThemeManager(context);
+        this.themeManager = ThemeManager.getInstance(context);
         init();
     }
     
@@ -569,6 +569,12 @@ public class StatusIndicatorView extends View implements OnClickListener {
         this.textColor = themeManager.getTextSecondaryColor();
         invalidate();
     }
+    
+    public void updateTheme() {
+        // Update theme colors and trigger redraw
+        updateThemeColors();
+    }
+    
     
     public void setInactiveColor(int color) {
         this.inactiveColor = color;

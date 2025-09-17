@@ -174,7 +174,7 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
     
     private void initializeServices() {
         // Initialize theme manager
-        themeManager = new ThemeManager(this);
+        themeManager = ThemeManager.getInstance(this);
         
         // Initialize trip calculator
         tripCalculator = new TripCalculator();
@@ -333,17 +333,17 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
         avgSpeedDetail.updateThemeColors();
         avgSpeedDetail.setFont(themeManager.getBoldFont());
         
-        // Update status indicator colors
+        // Update status indicator colors and theme
         updateOilIndicatorColor();
-        batteryIndicator.updateThemeColors();
-        httpIndicator.updateThemeColors();
+        batteryIndicator.updateTheme();
+        httpIndicator.updateTheme();
         
-        drlIndicator.updateThemeColors();
-        lowBeamIndicator.updateThemeColors();
-        highBeamIndicator.updateThemeColors();
-        hazardIndicator.updateThemeColors();
-        leftTurnIndicator.updateThemeColors();
-        rightTurnIndicator.updateThemeColors();
+        drlIndicator.updateTheme();
+        lowBeamIndicator.updateTheme();
+        highBeamIndicator.updateTheme();
+        hazardIndicator.updateTheme();
+        leftTurnIndicator.updateTheme();
+        rightTurnIndicator.updateTheme();
         
         // Update background colors
         findViewById(android.R.id.content).setBackgroundColor(backgroundColor);

@@ -24,13 +24,13 @@ public class StatusBoxView extends View {
     
     public StatusBoxView(Context context) {
         super(context);
-        this.themeManager = new ThemeManager(context);
+        this.themeManager = ThemeManager.getInstance(context);
         init();
     }
     
     public StatusBoxView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        this.themeManager = new ThemeManager(context);
+        this.themeManager = ThemeManager.getInstance(context);
         init();
     }
     

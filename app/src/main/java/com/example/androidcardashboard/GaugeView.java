@@ -53,13 +53,13 @@ public class GaugeView extends View {
     
     public GaugeView(Context context) {
         super(context);
-        this.themeManager = new ThemeManager(context);
+        this.themeManager = ThemeManager.getInstance(context);
         init();
     }
     
     public GaugeView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        this.themeManager = new ThemeManager(context);
+        this.themeManager = ThemeManager.getInstance(context);
         init();
     }
     

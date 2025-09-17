@@ -29,13 +29,13 @@ public class TripDetailView extends View {
     
     public TripDetailView(Context context) {
         super(context);
-        this.themeManager = new ThemeManager(context);
+        this.themeManager = ThemeManager.getInstance(context);
         init();
     }
     
     public TripDetailView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        this.themeManager = new ThemeManager(context);
+        this.themeManager = ThemeManager.getInstance(context);
         init();
     }
     
@@ -150,4 +150,5 @@ public class TripDetailView extends View {
         }
         invalidate();
     }
+    
 }

@@ -5,6 +5,9 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 
 public class ThemeManager {
+    private static ThemeManager instance;
+    private Context context;
+    
     public enum ThemeType {
         MINIMAL, LINUX, ANALOG
     }
@@ -15,11 +18,25 @@ public class ThemeManager {
         ANALOG   // Classic analog gauge with traditional styling
     }
     
-    private ThemeType currentTheme = ThemeType.MINIMAL; // Start with Minimal as default
+    private ThemeType currentTheme = getRandomTheme(); // Start with random theme
     private FontManager fontManager;
     
-    public ThemeManager(Context context) {
+    private ThemeManager(Context context) {
+        this.context = context.getApplicationContext();
         this.fontManager = FontManager.getInstance(context);
+    }
+    
+    public static synchronized ThemeManager getInstance(Context context) {
+        if (instance == null) {
+            instance = new ThemeManager(context);
+        }
+        return instance;
+    }
+    
+    private ThemeType getRandomTheme() {
+        ThemeType[] themes = ThemeType.values();
+        int randomIndex = (int) (Math.random() * themes.length);
+        return themes[randomIndex];
     }
     
     public ThemeType getCurrentTheme() {
@@ -38,6 +55,10 @@ public class ThemeManager {
                 currentTheme = ThemeType.MINIMAL;
                 break;
         }
+    }
+    
+    public void setTheme(ThemeType theme) {
+        this.currentTheme = theme;
     }
     
     // Color schemes for different themes
@@ -161,13 +182,13 @@ public class ThemeManager {
     public int getInactiveColor() {
         switch (currentTheme) {
             case MINIMAL:
-                return Color.parseColor("#424242");
+                return Color.parseColor("#2A2A2A"); // Darker gray
             case LINUX:
-                return Color.parseColor("#444444");
+                return Color.parseColor("#2C2C2C"); // Darker gray
             case ANALOG:
-                return Color.parseColor("#654321"); // Dark brown
+                return Color.parseColor("#3D2B1E"); // Darker brown
             default:
-                return Color.parseColor("#424242");
+                return Color.parseColor("#2A2A2A");
         }
     }
     
