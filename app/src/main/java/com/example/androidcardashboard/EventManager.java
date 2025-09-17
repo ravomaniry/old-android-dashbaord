@@ -11,12 +11,12 @@ public class EventManager {
     private static EventManager instance;
     
     private List<GpsEvent> latestGpsEvents;
-    private List<BluetoothEvent> latestBluetoothEvents;
+    private List<HttpEvent> latestHttpEvents;
     private Handler mainHandler;
     
     private EventManager() {
         latestGpsEvents = new ArrayList<>();
-        latestBluetoothEvents = new ArrayList<>();
+        latestHttpEvents = new ArrayList<>();
         mainHandler = new Handler(Looper.getMainLooper());
     }
     
@@ -41,26 +41,26 @@ public class EventManager {
         Log.d(TAG, "GPS Event [" + level + "]: " + message);
     }
     
-    public void addBluetoothEvent(String message, String level) {
-        BluetoothEvent event = new BluetoothEvent(message, level, System.currentTimeMillis());
+    public void addHttpEvent(String message, String level) {
+        HttpEvent event = new HttpEvent(message, level, System.currentTimeMillis());
         
         // Add to beginning of list
-        latestBluetoothEvents.add(0, event);
+        latestHttpEvents.add(0, event);
         
         // Keep only last 10 events
-        if (latestBluetoothEvents.size() > 10) {
-            latestBluetoothEvents.remove(latestBluetoothEvents.size() - 1);
+        if (latestHttpEvents.size() > 10) {
+            latestHttpEvents.remove(latestHttpEvents.size() - 1);
         }
         
-        Log.d(TAG, "Bluetooth Event [" + level + "]: " + message);
+        Log.d(TAG, "HTTP Event [" + level + "]: " + message);
     }
     
     public List<GpsEvent> getLatestGpsEvents() {
         return new ArrayList<>(latestGpsEvents);
     }
     
-    public List<BluetoothEvent> getLatestBluetoothEvents() {
-        return new ArrayList<>(latestBluetoothEvents);
+    public List<HttpEvent> getLatestHttpEvents() {
+        return new ArrayList<>(latestHttpEvents);
     }
     
     public static class GpsEvent {
@@ -87,12 +87,12 @@ public class EventManager {
         }
     }
     
-    public static class BluetoothEvent {
+    public static class HttpEvent {
         private String message;
         private String level;
         private long timestamp;
         
-        public BluetoothEvent(String message, String level, long timestamp) {
+        public HttpEvent(String message, String level, long timestamp) {
             this.message = message;
             this.level = level;
             this.timestamp = timestamp;

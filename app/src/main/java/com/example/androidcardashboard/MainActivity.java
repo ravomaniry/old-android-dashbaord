@@ -9,11 +9,12 @@ import android.os.Looper;
 import android.os.PowerManager;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.TextView;
 import android.os.Build;
 import java.util.Random;
 import java.util.List;
 
-public class MainActivity extends Activity implements BluetoothService.BluetoothDataListener, StatusIndicatorView.OnStatusClickListener {
+public class MainActivity extends Activity implements HttpService.HttpDataListener, StatusIndicatorView.OnStatusClickListener {
     // Dashboard data
     private double speed = 0.0;
     private double rpm = 0.0;
@@ -34,7 +35,7 @@ public class MainActivity extends Activity implements BluetoothService.Bluetooth
     private boolean rightTurnSignal = false;
     private boolean hazardLights = false;
     private boolean reverseGear = false;
-    private boolean bluetoothConnected = true;
+    private boolean httpConnected = true;
     
     // Custom Views
     private SpeedometerView speedometer;
@@ -42,7 +43,7 @@ public class MainActivity extends Activity implements BluetoothService.Bluetooth
     private GaugeView fuelGauge;
     private StatusIndicatorView oilWarningIndicator;
     private StatusIndicatorView batteryIndicator;
-    private StatusIndicatorView bluetoothIndicator;
+    private StatusIndicatorView httpIndicator;
     private StatusIndicatorView drlIndicator;
     private StatusIndicatorView lowBeamIndicator;
     private StatusIndicatorView highBeamIndicator;
@@ -65,7 +66,7 @@ public class MainActivity extends Activity implements BluetoothService.Bluetooth
     private Runnable hideButtonsRunnable;
     
     // Services
-    private BluetoothService bluetoothService;
+    private HttpService httpService;
     private ThemeManager themeManager;
     private PowerManager.WakeLock wakeLock;
     private TripCalculator tripCalculator;
@@ -98,7 +99,7 @@ public class MainActivity extends Activity implements BluetoothService.Bluetooth
         // Status indicators
         oilWarningIndicator = (StatusIndicatorView) findViewById(R.id.oil_warning_indicator);
         batteryIndicator = (StatusIndicatorView) findViewById(R.id.battery_indicator);
-        bluetoothIndicator = (StatusIndicatorView) findViewById(R.id.bluetooth_indicator);
+        httpIndicator = (StatusIndicatorView) findViewById(R.id.wifi_indicator);
         drlIndicator = (StatusIndicatorView) findViewById(R.id.drl_indicator);
         lowBeamIndicator = (StatusIndicatorView) findViewById(R.id.low_beam_indicator);
         highBeamIndicator = (StatusIndicatorView) findViewById(R.id.high_beam_indicator);
@@ -127,7 +128,7 @@ public class MainActivity extends Activity implements BluetoothService.Bluetooth
         // Initialize status indicator labels
         oilWarningIndicator.setLabel(getString(R.string.oil_warning));
         batteryIndicator.setLabel(getString(R.string.battery));
-        bluetoothIndicator.setLabel(getString(R.string.bluetooth));
+        httpIndicator.setLabel(getString(R.string.wifi));
         drlIndicator.setLabel(getString(R.string.drl));
         lowBeamIndicator.setLabel(getString(R.string.low_beam));
         highBeamIndicator.setLabel(getString(R.string.high_beam));
@@ -136,12 +137,12 @@ public class MainActivity extends Activity implements BluetoothService.Bluetooth
         rightTurnIndicator.setLabel(getString(R.string.right_turn));
         
         // Set up status click listeners
-        bluetoothIndicator.setOnStatusClickListener(this);
+        httpIndicator.setOnStatusClickListener(this);
         
         // Force text size update for all indicators
         oilWarningIndicator.updateTextSize();
         batteryIndicator.updateTextSize();
-        bluetoothIndicator.updateTextSize();
+        httpIndicator.updateTextSize();
         drlIndicator.updateTextSize();
         lowBeamIndicator.updateTextSize();
         highBeamIndicator.updateTextSize();
@@ -176,9 +177,9 @@ public class MainActivity extends Activity implements BluetoothService.Bluetooth
         // Initialize trip calculator
         tripCalculator = new TripCalculator();
         
-        // Initialize Bluetooth service
-        bluetoothService = new BluetoothService(this);
-        bluetoothService.setDataListener(this);
+        // Initialize HTTP service
+        httpService = new HttpService(this);
+        httpService.setDataListener(this);
     }
     
     
@@ -196,7 +197,7 @@ public class MainActivity extends Activity implements BluetoothService.Bluetooth
     private void updateDashboardData() {
         if (demoMode) {
             // Simulate realistic car data only if no real data is available
-            if (!bluetoothConnected) {
+            if (!httpConnected) {
                 speed = Math.max(0, speed + (random.nextDouble() - 0.5) * 10);
                 speed = Math.min(120, speed);
                 
@@ -211,7 +212,7 @@ public class MainActivity extends Activity implements BluetoothService.Bluetooth
                 }
             }
             
-            if (!bluetoothService.isConnected()) {
+            if (!httpService.isConnected()) {
                 rpm = speed * 100 + random.nextDouble() * 500;
                 rpm = Math.max(800, Math.min(6000, rpm));
                 
@@ -260,7 +261,7 @@ public class MainActivity extends Activity implements BluetoothService.Bluetooth
         // Update status indicators
         oilWarningIndicator.setActive(oilWarning);
         updateBatteryIndicator();
-        bluetoothIndicator.setActive(bluetoothConnected);
+        httpIndicator.setActive(httpConnected);
         drlIndicator.setActive(drlOn);
         lowBeamIndicator.setActive(lowBeamOn);
         highBeamIndicator.setActive(highBeamOn);
@@ -283,6 +284,7 @@ public class MainActivity extends Activity implements BluetoothService.Bluetooth
         batteryIndicator.setActive(true);
     }
     
+    
     private void updateTheme() {
         // Update colors based on current theme
         int primaryColor = themeManager.getPrimaryAccentColor();
@@ -296,7 +298,7 @@ public class MainActivity extends Activity implements BluetoothService.Bluetooth
         // Update status indicator colors
         oilWarningIndicator.setActiveColor(themeManager.getDangerColor());
         batteryIndicator.setActiveColor(themeManager.getSuccessColor());
-        bluetoothIndicator.setActiveColor(primaryColor);
+        httpIndicator.setActiveColor(primaryColor);
         
         drlIndicator.setActiveColor(secondaryColor);
         lowBeamIndicator.setActiveColor(secondaryColor);
@@ -564,12 +566,12 @@ public class MainActivity extends Activity implements BluetoothService.Bluetooth
     }
     
     
-    // Bluetooth Service Callbacks
+    // HTTP Service Callbacks
     @Override
-    public void onBluetoothDataUpdate(double speed, double rpm, double coolantTemp, double fuelLevel, 
-                                    boolean oilWarning, double batteryVoltage, boolean drlOn, 
-                                    boolean lowBeamOn, boolean highBeamOn, boolean leftTurnSignal, 
-                                    boolean rightTurnSignal, boolean hazardLights, boolean reverseGear, String location) {
+    public void onHttpDataUpdate(double speed, double rpm, double coolantTemp, double fuelLevel, 
+                                boolean oilWarning, double batteryVoltage, boolean drlOn, 
+                                boolean lowBeamOn, boolean highBeamOn, boolean leftTurnSignal, 
+                                boolean rightTurnSignal, boolean hazardLights, boolean reverseGear, String location) {
         this.speed = speed;
         this.rpm = rpm;
         this.coolantTemp = coolantTemp;
@@ -599,8 +601,8 @@ public class MainActivity extends Activity implements BluetoothService.Bluetooth
     }
     
     @Override
-    public void onBluetoothStatusChange(boolean connected, String status) {
-        bluetoothConnected = connected;
+    public void onHttpStatusChange(boolean connected, String status) {
+        httpConnected = connected;
         updateUI();
     }
     
@@ -639,8 +641,8 @@ public class MainActivity extends Activity implements BluetoothService.Bluetooth
         }
         
         // Cleanup services
-        if (bluetoothService != null) {
-            bluetoothService.cleanup();
+        if (httpService != null) {
+            httpService.cleanup();
         }
         if (tripCalculator != null) {
             tripCalculator.resetTrip();
@@ -663,48 +665,84 @@ public class MainActivity extends Activity implements BluetoothService.Bluetooth
     // Status click handling
     @Override
     public void onStatusClick(String statusType) {
-        if (getString(R.string.bluetooth).equals(statusType)) {
-            showBluetoothDialog();
+        if (getString(R.string.wifi).equals(statusType)) {
+            showHttpDialog();
         }
     }
     
-    private void showBluetoothDialog() {
-        String status = bluetoothService != null ? bluetoothService.getStatus() : getString(R.string.bluetooth_not_available);
-        List<EventManager.BluetoothEvent> events = EventManager.getInstance().getLatestBluetoothEvents();
+    private void showHttpDialog() {
+        String status = httpService != null ? httpService.getStatus() : "HTTP Service not available";
+        List<EventManager.HttpEvent> events = EventManager.getInstance().getLatestHttpEvents();
+        
+        // Generate current JSON data
+        String currentJsonData = generateCurrentJsonData();
         
         ServiceStatusDialog dialog = new ServiceStatusDialog(
             this,
-            getString(R.string.bluetooth_service),
+            "WiFi Service",
             android.R.drawable.ic_dialog_info,
             status,
             events,
             new ServiceStatusDialog.OnActionClickListener() {
                 @Override
                 public void onConnectClick() {
-                    if (bluetoothService != null) {
-                        bluetoothService.connectToDevice();
+                    if (httpService != null) {
+                        httpService.connectToServer();
                     }
                 }
                 
                 @Override
                 public void onDisconnectClick() {
-                    if (bluetoothService != null) {
-                        bluetoothService.disconnect();
+                    if (httpService != null) {
+                        httpService.disconnect();
                     }
                 }
                 
                 @Override
                 public void onRetryClick() {
-                    if (bluetoothService != null) {
-                        bluetoothService.connectToDevice();
+                    if (httpService != null) {
+                        httpService.connectToServer();
                     }
                 }
                 
-            }
+            },
+            currentJsonData
         );
         
         Dialog dialogInstance = dialog.createDialog();
         dialogInstance.show();
+    }
+    
+    private String generateCurrentJsonData() {
+        try {
+            StringBuilder json = new StringBuilder();
+            json.append("{\n");
+            json.append("  \"timestamp\": ").append(System.currentTimeMillis()).append(",\n");
+            json.append("  \"speed\": ").append(String.format("%.1f", speed)).append(",\n");
+            json.append("  \"rpm\": ").append(String.format("%.0f", rpm)).append(",\n");
+            json.append("  \"coolantTemp\": ").append(String.format("%.1f", coolantTemp)).append(",\n");
+            json.append("  \"fuelLevel\": ").append(String.format("%.1f", fuelLevel)).append(",\n");
+            json.append("  \"oilWarning\": ").append(oilWarning).append(",\n");
+            json.append("  \"batteryVoltage\": ").append(String.format("%.1f", batteryVoltage)).append(",\n");
+            json.append("  \"drlOn\": ").append(drlOn).append(",\n");
+            json.append("  \"lowBeamOn\": ").append(lowBeamOn).append(",\n");
+            json.append("  \"highBeamOn\": ").append(highBeamOn).append(",\n");
+            json.append("  \"leftTurnSignal\": ").append(leftTurnSignal).append(",\n");
+            json.append("  \"rightTurnSignal\": ").append(rightTurnSignal).append(",\n");
+            json.append("  \"hazardLights\": ").append(hazardLights).append(",\n");
+            json.append("  \"reverseGear\": ").append(reverseGear).append(",\n");
+            json.append("  \"tripDistance\": ").append(String.format("%.1f", tripDistance)).append(",\n");
+            json.append("  \"fuelUsage\": ").append(String.format("%.1f", fuelUsage)).append(",\n");
+            json.append("  \"avgTemperature\": ").append(String.format("%.1f", avgTemperature)).append(",\n");
+            json.append("  \"avgSpeed\": ").append(String.format("%.1f", avgSpeed)).append(",\n");
+            json.append("  \"httpConnected\": ").append(httpConnected).append(",\n");
+            json.append("  \"demoMode\": ").append(demoMode).append("\n");
+            json.append("}");
+            
+            return json.toString();
+        } catch (Exception e) {
+            return "{\n  \"error\": \"Failed to format JSON\"\n}";
+        }
     }
     
 }

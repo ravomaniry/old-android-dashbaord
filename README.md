@@ -1,6 +1,6 @@
 # Android Car Dashboard
 
-A modern Android car dashboard application that receives real-time vehicle data via Bluetooth and displays it on a tablet interface. The app calculates trip metrics on-device using GPS location data.
+A modern Android car dashboard application that receives real-time vehicle data via HTTP from an ESP32 server and displays it on a tablet interface. The app calculates trip metrics on-device using GPS location data.
 
 ## Features
 
@@ -36,11 +36,11 @@ A modern Android car dashboard application that receives real-time vehicle data 
 
 ### 🔧 **System Status**
 
-- **Bluetooth Connection:** Real-time connection status
+- **HTTP Connection:** Real-time connection status to ESP32 server
 - **Battery Status:** Electrical system health
 - **Oil Warning:** Engine oil pressure alerts
 
-## Bluetooth Data Format
+## HTTP Data Format
 
 The app expects JSON data via Bluetooth with the following structure. All fields are **optional** - missing keys will use default values.
 

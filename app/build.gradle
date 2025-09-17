@@ -32,4 +32,7 @@ android {
 
 dependencies {
     testImplementation 'junit:junit:4.12'
+    
+    // HTTP networking support (built into Android SDK)
+    // No additional dependencies needed for HttpURLConnection
 }

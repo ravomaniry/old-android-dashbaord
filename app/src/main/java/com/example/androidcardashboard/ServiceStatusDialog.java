@@ -22,6 +22,7 @@ public class ServiceStatusDialog {
     private String serviceStatus;
     private List<?> events;
     private OnActionClickListener actionClickListener;
+    private String currentJsonData;
     
     public interface OnActionClickListener {
         void onConnectClick();
@@ -32,12 +33,19 @@ public class ServiceStatusDialog {
     public ServiceStatusDialog(Context context, String title, int iconResId, 
                              String serviceStatus, List<?> events, 
                              OnActionClickListener actionClickListener) {
+        this(context, title, iconResId, serviceStatus, events, actionClickListener, null);
+    }
+    
+    public ServiceStatusDialog(Context context, String title, int iconResId, 
+                             String serviceStatus, List<?> events, 
+                             OnActionClickListener actionClickListener, String currentJsonData) {
         this.context = context;
         this.title = title;
         this.iconResId = iconResId;
         this.serviceStatus = serviceStatus;
         this.events = events;
         this.actionClickListener = actionClickListener;
+        this.currentJsonData = currentJsonData;
     }
     
     public Dialog createDialog() {
@@ -59,13 +67,21 @@ public class ServiceStatusDialog {
         EventAdapter adapter = new EventAdapter(events);
         eventsList.setAdapter(adapter);
         
+        // Set up JSON data display
+        TextView jsonDataView = (TextView) dialogView.findViewById(R.id.json_data_display);
+        if (currentJsonData != null && !currentJsonData.isEmpty()) {
+            jsonDataView.setText(currentJsonData);
+        } else {
+            jsonDataView.setText("{\n  \"status\": \"No data available\"\n}");
+        }
+        
         // Set up action buttons
         Button connectBtn = (Button) dialogView.findViewById(R.id.btn_connect);
         Button disconnectBtn = (Button) dialogView.findViewById(R.id.btn_disconnect);
         Button retryBtn = (Button) dialogView.findViewById(R.id.btn_retry);
         Button closeBtn = (Button) dialogView.findViewById(R.id.btn_close);
         
-        // Set up buttons for Bluetooth service
+        // Set up buttons for WiFi service
         connectBtn.setText(context.getString(R.string.connect));
         disconnectBtn.setText(context.getString(R.string.disconnect));
         retryBtn.setText(context.getString(R.string.retry));
@@ -149,11 +165,11 @@ public class ServiceStatusDialog {
                 level = gpsEvent.getLevel();
                 message = gpsEvent.getMessage();
                 time = gpsEvent.getFormattedTime();
-            } else if (event instanceof EventManager.BluetoothEvent) {
-                EventManager.BluetoothEvent bluetoothEvent = (EventManager.BluetoothEvent) event;
-                level = bluetoothEvent.getLevel();
-                message = bluetoothEvent.getMessage();
-                time = bluetoothEvent.getFormattedTime();
+            } else if (event instanceof EventManager.HttpEvent) {
+                EventManager.HttpEvent httpEvent = (EventManager.HttpEvent) event;
+                level = httpEvent.getLevel();
+                message = httpEvent.getMessage();
+                time = httpEvent.getFormattedTime();
             }
             
             levelView.setText(level);

@@ -25,7 +25,7 @@
         android:orientation="horizontal"
         android:layout_marginBottom="16dp">
 
-        <!-- Left Column: Service Status -->
+        <!-- Left Column: Service Status & JSON Data -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -52,7 +52,37 @@
                 android:textColor="#FFFFFF"
                 android:textSize="12sp"
                 android:background="#000000"
-                android:padding="8dp" />
+                android:padding="8dp"
+                android:layout_marginBottom="8dp" />
+
+            <!-- JSON Data Header -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CURRENT DATA"
+                android:textColor="#00D9FF"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <!-- JSON Data Content -->
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:background="#000000"
+                android:padding="8dp">
+
+                <TextView
+                    android:id="@+id/json_data_display"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="{&#10;  &quot;status&quot;: &quot;Waiting for data...&quot;&#10;}"
+                    android:textColor="#00FF41"
+                    android:textSize="10sp"
+                    android:fontFamily="monospace"
+                    android:lineSpacingExtra="2dp" />
+
+            </ScrollView>
 
         </LinearLayout>
 

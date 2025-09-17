@@ -112,8 +112,8 @@ public class StatusIndicatorView extends View implements OnClickListener {
             case "BATTERY":
                 drawBatteryIcon(canvas, iconX, iconY, iconSize);
                 break;
-            case "BLUETOOTH":
-                drawBluetoothIcon(canvas, iconX, iconY, iconSize);
+            case "WIFI":
+                drawWifiIcon(canvas, iconX, iconY, iconSize);
                 break;
             case "GPS":
                 drawGpsIcon(canvas, iconX, iconY, iconSize);
@@ -195,26 +195,40 @@ public class StatusIndicatorView extends View implements OnClickListener {
         canvas.drawRect(x + size * 0.1f, y - size * 0.2f, x + size * 0.1f + barWidth, y - size * 0.2f + barHeight, batteryPaint);
     }
     
-    private void drawBluetoothIcon(Canvas canvas, float x, float y, float size) {
-        // Bluetooth icon (bluetooth style)
-        Paint bluetoothPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        bluetoothPaint.setColor(indicatorPaint.getColor());
-        bluetoothPaint.setStyle(Paint.Style.STROKE);
-        bluetoothPaint.setStrokeWidth(size * 0.08f);
+    private void drawWifiIcon(Canvas canvas, float x, float y, float size) {
+        // WiFi icon (signal strength style)
+        Paint wifiPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        wifiPaint.setColor(indicatorPaint.getColor());
+        wifiPaint.setStyle(Paint.Style.STROKE);
+        wifiPaint.setStrokeWidth(size * 0.06f);
         
-        // Bluetooth symbol
-        Path bluetoothPath = new Path();
-        bluetoothPath.moveTo(x, y - size * 0.4f);
-        bluetoothPath.lineTo(x + size * 0.2f, y - size * 0.2f);
-        bluetoothPath.lineTo(x, y);
-        bluetoothPath.lineTo(x + size * 0.2f, y + size * 0.2f);
-        bluetoothPath.lineTo(x, y + size * 0.4f);
-        bluetoothPath.lineTo(x - size * 0.2f, y + size * 0.2f);
-        bluetoothPath.lineTo(x, y);
-        bluetoothPath.lineTo(x - size * 0.2f, y - size * 0.2f);
-        bluetoothPath.close();
+        // WiFi signal arcs - more distinct design
+        float centerX = x;
+        float centerY = y + size * 0.05f;
         
-        canvas.drawPath(bluetoothPath, bluetoothPaint);
+        // Draw 4 arcs representing WiFi signal strength (more visible)
+        for (int i = 0; i < 4; i++) {
+            float arcRadius = size * 0.15f + (i * size * 0.08f);
+            float startAngle = 225f; // Start from bottom-left
+            float sweepAngle = 90f;   // Quarter circle
+            
+            android.graphics.RectF rect = new android.graphics.RectF(
+                centerX - arcRadius, centerY - arcRadius, 
+                centerX + arcRadius, centerY + arcRadius);
+            canvas.drawArc(rect, startAngle, sweepAngle, false, wifiPaint);
+        }
+        
+        // Draw center dot (WiFi router indicator)
+        wifiPaint.setStyle(Paint.Style.FILL);
+        canvas.drawCircle(centerX, centerY + size * 0.12f, size * 0.04f, wifiPaint);
+        
+        // Draw antenna lines for more WiFi-like appearance
+        wifiPaint.setStyle(Paint.Style.STROKE);
+        wifiPaint.setStrokeWidth(size * 0.04f);
+        canvas.drawLine(centerX - size * 0.08f, centerY + size * 0.12f, 
+                      centerX - size * 0.12f, centerY + size * 0.08f, wifiPaint);
+        canvas.drawLine(centerX + size * 0.08f, centerY + size * 0.12f, 
+                      centerX + size * 0.12f, centerY + size * 0.08f, wifiPaint);
     }
     
     private void drawGpsIcon(Canvas canvas, float x, float y, float size) {

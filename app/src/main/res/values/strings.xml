@@ -20,7 +20,7 @@
     <!-- Status Indicators -->
     <string name="oil_warning">OIL</string>
     <string name="battery">BATTERY</string>
-    <string name="bluetooth">BLUETOOTH</string>
+    <string name="wifi">WIFI</string>
     <string name="drl">DRL</string>
     <string name="low_beam">LOW BEAM</string>
     <string name="high_beam">HIGH BEAM</string>
@@ -29,7 +29,7 @@
     <string name="right_turn">RIGHT TURN</string>
     
     <!-- Dialog Strings -->
-    <string name="bluetooth_service">Bluetooth Service</string>
+    <string name="wifi_service">WiFi Service</string>
     <string name="service_status">Service Status:</string>
     <string name="latest_events">Latest Events (10):</string>
     <string name="connect">Connect</string>
@@ -38,15 +38,15 @@
     <string name="close">Close</string>
     
     <!-- Status Messages -->
-    <string name="bluetooth_ready">Bluetooth ready</string>
-    <string name="bluetooth_disabled">Bluetooth disabled</string>
-    <string name="bluetooth_not_available">Bluetooth not available</string>
-    <string name="bluetooth_connected">Connected</string>
-    <string name="bluetooth_disconnected">Disconnected</string>
-    <string name="bluetooth_scanning">Scanning for devices...</string>
-    <string name="bluetooth_connecting">Connecting...</string>
-    <string name="bluetooth_device_not_found">Device not found</string>
-    <string name="bluetooth_connection_failed">Connection failed</string>
+    <string name="wifi_ready">WiFi ready</string>
+    <string name="wifi_disabled">WiFi disabled</string>
+    <string name="wifi_not_available">WiFi not available</string>
+    <string name="wifi_connected">Connected</string>
+    <string name="wifi_disconnected">Disconnected</string>
+    <string name="wifi_scanning">Scanning for networks...</string>
+    <string name="wifi_connecting">Connecting...</string>
+    <string name="wifi_server_not_found">Server not found</string>
+    <string name="wifi_connection_failed">Connection failed</string>
     
     
     <!-- Event Levels -->

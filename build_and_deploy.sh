@@ -58,6 +58,13 @@ check_device() {
     # Get device info
     device_id=$(adb devices | grep -v "List of devices" | grep -v "^$" | head -n1 | cut -f1)
     print_success "Found device: $device_id"
+    
+    # Check if app is already installed
+    if adb shell pm list packages | grep -q "$APP_PACKAGE"; then
+        print_status "App is already installed on device"
+    else
+        print_status "App not yet installed on device"
+    fi
 }
 
 # Function to clean previous build
@@ -103,9 +110,21 @@ uninstall_existing() {
 install_app() {
     print_status "Installing app on device..."
     
-    adb install "$APK_PATH"
+    # Try to install, capture output to check for specific errors
+    install_output=$(adb install "$APK_PATH" 2>&1)
+    install_result=$?
     
-    if [ $? -eq 0 ]; then
+    # Check if the error is due to app already existing
+    if echo "$install_output" | grep -q "INSTALL_FAILED_ALREADY_EXISTS"; then
+        print_warning "App already exists, reinstalling..."
+        adb install -r "$APK_PATH"
+        install_result=$?
+    elif echo "$install_output" | grep -q "INSTALL_FAILED"; then
+        print_error "Installation failed: $install_output"
+        exit 1
+    fi
+    
+    if [ $install_result -eq 0 ]; then
         print_success "App installed successfully"
     else
         print_error "Failed to install app"
@@ -118,13 +137,22 @@ launch_app() {
     print_status "Launching app..."
     
     # Start the main activity
-    adb shell am start -n "$APP_PACKAGE/.MainActivity"
+    adb shell am start -n "$APP_PACKAGE/.MainActivity" 2>/dev/null
+    launch_result=$?
     
-    if [ $? -eq 0 ]; then
+    if [ $launch_result -eq 0 ]; then
         print_success "App launched successfully"
     else
-        print_error "Failed to launch app"
-        exit 1
+        # Check if app is already running
+        if adb shell ps | grep -q "$APP_PACKAGE"; then
+            print_warning "App is already running"
+            print_status "Bringing app to foreground..."
+            adb shell am start -n "$APP_PACKAGE/.MainActivity" -f 0x20000000 2>/dev/null
+            print_success "App brought to foreground"
+        else
+            print_error "Failed to launch app"
+            exit 1
+        fi
     fi
 }
 
