@@ -15,28 +15,28 @@ import android.os.Build;
 import java.util.Random;
 import java.util.List;
 
-public class MainActivity extends Activity implements HttpService.HttpDataListener, StatusIndicatorView.OnStatusClickListener {
+public class MainActivity extends Activity implements TcpService.TcpDataListener, StatusIndicatorView.OnStatusClickListener {
     // Dashboard data
     private double speed = 0.0;
     private double rpm = 0.0;
-    private double coolantTemp = 82.0;
-    private double fuelLevel = 65.0;
+    private double coolantTemp = 0.0;
+    private double fuelLevel = 0.0;
     private double tripDistance = 0.0;
     private double fuelUsage = 0.0;
     private double avgTemperature = 0.0;
     private double avgSpeed = 0.0;
-    private double batteryVoltage = 12.6;
+    private double batteryVoltage = 0.0;
     
     // Status indicators
     private boolean oilWarning = false;
-    private boolean drlOn = true;
+    private boolean drlOn = false;
     private boolean lowBeamOn = false;
     private boolean highBeamOn = false;
     private boolean leftTurnSignal = false;
     private boolean rightTurnSignal = false;
     private boolean hazardLights = false;
     private boolean reverseGear = false;
-    private boolean httpConnected = true;
+    private boolean tcpConnected = false;
     
     // Custom Views
     private SpeedometerView speedometer;
@@ -44,7 +44,7 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
     private GaugeView fuelGauge;
     private StatusIndicatorView oilWarningIndicator;
     private StatusIndicatorView batteryIndicator;
-    private StatusIndicatorView httpIndicator;
+    private StatusIndicatorView tcpIndicator;
     private StatusIndicatorView drlIndicator;
     private StatusIndicatorView lowBeamIndicator;
     private StatusIndicatorView highBeamIndicator;
@@ -67,7 +67,7 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
     private Runnable hideButtonsRunnable;
     
     // Services
-    private HttpService httpService;
+    private TcpService tcpService;
     private ThemeManager themeManager;
     private PowerManager.WakeLock wakeLock;
     private TripCalculator tripCalculator;
@@ -100,7 +100,7 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
         // Status indicators
         oilWarningIndicator = (StatusIndicatorView) findViewById(R.id.oil_warning_indicator);
         batteryIndicator = (StatusIndicatorView) findViewById(R.id.battery_indicator);
-        httpIndicator = (StatusIndicatorView) findViewById(R.id.wifi_indicator);
+        tcpIndicator = (StatusIndicatorView) findViewById(R.id.wifi_indicator);
         drlIndicator = (StatusIndicatorView) findViewById(R.id.drl_indicator);
         lowBeamIndicator = (StatusIndicatorView) findViewById(R.id.low_beam_indicator);
         highBeamIndicator = (StatusIndicatorView) findViewById(R.id.high_beam_indicator);
@@ -130,7 +130,7 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
         oilWarningIndicator.setLabel(getString(R.string.oil_warning));
         oilWarningIndicator.setAlwaysShowColor(true); // Always show color for oil indicator
         batteryIndicator.setLabel(getString(R.string.battery));
-        httpIndicator.setLabel(getString(R.string.wifi));
+        tcpIndicator.setLabel(getString(R.string.wifi));
         drlIndicator.setLabel(getString(R.string.drl));
         lowBeamIndicator.setLabel(getString(R.string.low_beam));
         highBeamIndicator.setLabel(getString(R.string.high_beam));
@@ -139,12 +139,12 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
         rightTurnIndicator.setLabel(getString(R.string.right_turn));
         
         // Set up status click listeners
-        httpIndicator.setOnStatusClickListener(this);
+        tcpIndicator.setOnStatusClickListener(this);
         
         // Force text size update for all indicators
         oilWarningIndicator.updateTextSize();
         batteryIndicator.updateTextSize();
-        httpIndicator.updateTextSize();
+        tcpIndicator.updateTextSize();
         drlIndicator.updateTextSize();
         lowBeamIndicator.updateTextSize();
         highBeamIndicator.updateTextSize();
@@ -179,9 +179,9 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
         // Initialize trip calculator
         tripCalculator = new TripCalculator();
         
-        // Initialize HTTP service
-        httpService = new HttpService(this);
-        httpService.setDataListener(this);
+        // Initialize TCP service
+        tcpService = new TcpService(this);
+        tcpService.setDataListener(this);
     }
     
     
@@ -199,7 +199,7 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
     private void updateDashboardData() {
         if (demoMode) {
             // Simulate realistic car data only if no real data is available
-            if (!httpConnected) {
+            if (!tcpConnected) {
                 speed = Math.max(0, speed + (random.nextDouble() - 0.5) * 10);
                 speed = Math.min(120, speed);
                 
@@ -214,7 +214,7 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
                 }
             }
             
-            if (!httpService.isConnected()) {
+            if (!tcpService.isConnected()) {
                 rpm = speed * 100 + random.nextDouble() * 500;
                 rpm = Math.max(800, Math.min(6000, rpm));
                 
@@ -264,7 +264,7 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
         oilWarningIndicator.setActive(oilWarning);
         updateOilIndicatorColor(); // Set proper color based on oil state
         updateBatteryIndicator();
-        httpIndicator.setActive(httpConnected);
+        tcpIndicator.setActive(tcpConnected);
         drlIndicator.setActive(drlOn);
         lowBeamIndicator.setActive(lowBeamOn);
         highBeamIndicator.setActive(highBeamOn);
@@ -336,7 +336,7 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
         // Update status indicator colors and theme
         updateOilIndicatorColor();
         batteryIndicator.updateTheme();
-        httpIndicator.updateTheme();
+        tcpIndicator.updateTheme();
         
         drlIndicator.updateTheme();
         lowBeamIndicator.updateTheme();
@@ -653,12 +653,12 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
     }
     
     
-    // HTTP Service Callbacks
+    // TCP Service Callbacks
     @Override
-    public void onHttpDataUpdate(double speed, double rpm, double coolantTemp, double fuelLevel, 
-                                boolean oilWarning, double batteryVoltage, boolean drlOn, 
-                                boolean lowBeamOn, boolean highBeamOn, boolean leftTurnSignal, 
-                                boolean rightTurnSignal, boolean hazardLights, boolean reverseGear, String location) {
+    public void onTcpDataUpdate(double speed, double rpm, double coolantTemp, double fuelLevel, 
+                               boolean oilWarning, double batteryVoltage, boolean drlOn, 
+                               boolean lowBeamOn, boolean highBeamOn, boolean leftTurnSignal, 
+                               boolean rightTurnSignal, boolean hazardLights, boolean reverseGear, String location) {
         this.speed = speed;
         this.rpm = rpm;
         this.coolantTemp = coolantTemp;
@@ -688,8 +688,8 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
     }
     
     @Override
-    public void onHttpStatusChange(boolean connected, String status) {
-        httpConnected = connected;
+    public void onTcpStatusChange(boolean connected, String status) {
+        tcpConnected = connected;
         updateUI();
     }
     
@@ -728,8 +728,8 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
         }
         
         // Cleanup services
-        if (httpService != null) {
-            httpService.cleanup();
+        if (tcpService != null) {
+            tcpService.cleanup();
         }
         if (tripCalculator != null) {
             tripCalculator.resetTrip();
@@ -753,13 +753,13 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
     @Override
     public void onStatusClick(String statusType) {
         if (getString(R.string.wifi).equals(statusType)) {
-            showHttpDialog();
+            showTcpDialog();
         }
     }
     
-    private void showHttpDialog() {
-        String status = httpService != null ? httpService.getStatus() : "HTTP Service not available";
-        List<EventManager.HttpEvent> events = EventManager.getInstance().getLatestHttpEvents();
+    private void showTcpDialog() {
+        String status = tcpService != null ? tcpService.getStatus() : "TCP Service not available";
+        List<EventManager.TcpEvent> events = EventManager.getInstance().getLatestTcpEvents();
         
         // Generate current JSON data
         String currentJsonData = generateCurrentJsonData();
@@ -773,22 +773,22 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
             new ServiceStatusDialog.OnActionClickListener() {
                 @Override
                 public void onConnectClick() {
-                    if (httpService != null) {
-                        httpService.connectToServer();
+                    if (tcpService != null) {
+                        tcpService.connectToServer();
                     }
                 }
                 
                 @Override
                 public void onDisconnectClick() {
-                    if (httpService != null) {
-                        httpService.disconnect();
+                    if (tcpService != null) {
+                        tcpService.disconnect();
                     }
                 }
                 
                 @Override
                 public void onRetryClick() {
-                    if (httpService != null) {
-                        httpService.connectToServer();
+                    if (tcpService != null) {
+                        tcpService.connectToServer();
                     }
                 }
                 
@@ -822,7 +822,7 @@ public class MainActivity extends Activity implements HttpService.HttpDataListen
             json.append("  \"fuelUsage\": ").append(String.format("%.1f", fuelUsage)).append(",\n");
             json.append("  \"avgTemperature\": ").append(String.format("%.1f", avgTemperature)).append(",\n");
             json.append("  \"avgSpeed\": ").append(String.format("%.1f", avgSpeed)).append(",\n");
-            json.append("  \"httpConnected\": ").append(httpConnected).append(",\n");
+            json.append("  \"tcpConnected\": ").append(tcpConnected).append(",\n");
             json.append("  \"demoMode\": ").append(demoMode).append("\n");
             json.append("}");
             

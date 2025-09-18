@@ -165,11 +165,11 @@ public class ServiceStatusDialog {
                 level = gpsEvent.getLevel();
                 message = gpsEvent.getMessage();
                 time = gpsEvent.getFormattedTime();
-            } else if (event instanceof EventManager.HttpEvent) {
-                EventManager.HttpEvent httpEvent = (EventManager.HttpEvent) event;
-                level = httpEvent.getLevel();
-                message = httpEvent.getMessage();
-                time = httpEvent.getFormattedTime();
+            } else if (event instanceof EventManager.TcpEvent) {
+                EventManager.TcpEvent tcpEvent = (EventManager.TcpEvent) event;
+                level = tcpEvent.getLevel();
+                message = tcpEvent.getMessage();
+                time = tcpEvent.getFormattedTime();
             }
             
             levelView.setText(level);

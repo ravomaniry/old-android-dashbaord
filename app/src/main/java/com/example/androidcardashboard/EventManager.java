@@ -11,12 +11,12 @@ public class EventManager {
     private static EventManager instance;
     
     private List<GpsEvent> latestGpsEvents;
-    private List<HttpEvent> latestHttpEvents;
+    private List<TcpEvent> latestTcpEvents;
     private Handler mainHandler;
     
     private EventManager() {
         latestGpsEvents = new ArrayList<>();
-        latestHttpEvents = new ArrayList<>();
+        latestTcpEvents = new ArrayList<>();
         mainHandler = new Handler(Looper.getMainLooper());
     }
     
@@ -41,26 +41,28 @@ public class EventManager {
         Log.d(TAG, "GPS Event [" + level + "]: " + message);
     }
     
-    public void addHttpEvent(String message, String level) {
-        HttpEvent event = new HttpEvent(message, level, System.currentTimeMillis());
+    
+    public void addTcpEvent(String message, String level) {
+        TcpEvent event = new TcpEvent(message, level, System.currentTimeMillis());
         
         // Add to beginning of list
-        latestHttpEvents.add(0, event);
+        latestTcpEvents.add(0, event);
         
         // Keep only last 10 events
-        if (latestHttpEvents.size() > 10) {
-            latestHttpEvents.remove(latestHttpEvents.size() - 1);
+        if (latestTcpEvents.size() > 10) {
+            latestTcpEvents.remove(latestTcpEvents.size() - 1);
         }
         
-        Log.d(TAG, "HTTP Event [" + level + "]: " + message);
+        Log.d(TAG, "TCP Event [" + level + "]: " + message);
     }
     
     public List<GpsEvent> getLatestGpsEvents() {
         return new ArrayList<>(latestGpsEvents);
     }
     
-    public List<HttpEvent> getLatestHttpEvents() {
-        return new ArrayList<>(latestHttpEvents);
+    
+    public List<TcpEvent> getLatestTcpEvents() {
+        return new ArrayList<>(latestTcpEvents);
     }
     
     public static class GpsEvent {
@@ -87,12 +89,13 @@ public class EventManager {
         }
     }
     
-    public static class HttpEvent {
+    
+    public static class TcpEvent {
         private String message;
         private String level;
         private long timestamp;
         
-        public HttpEvent(String message, String level, long timestamp) {
+        public TcpEvent(String message, String level, long timestamp) {
             this.message = message;
             this.level = level;
             this.timestamp = timestamp;
