@@ -14,6 +14,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -22,6 +24,7 @@ public class HttpService {
     private static final String ESP32_IP = "192.168.4.1"; // Default ESP32 AP IP
     private static final int ESP32_PORT = 80;
     private static final String DATA_ENDPOINT = "/data";
+    private static final String DATA_STRUCTURE_ENDPOINT = "/data-structure";
     private static final int REQUEST_TIMEOUT_MS = 10000; // 10 seconds timeout for regular GET requests
     private static final int RETRY_DELAY_MS = 1000; // 1 second delay before retry on error
     private static final int POLL_DELAY_MS = 500;
@@ -36,6 +39,11 @@ public class HttpService {
     private boolean shouldPoll = false;
     private String status = "Disconnected";
     private String serverUrl;
+    private String dataStructureUrl;
+    
+    // Data structure for binary parsing
+    private JSONObject dataStructure = null;
+    private boolean dataStructureLoaded = false;
     
     public interface HttpDataListener {
         void onHttpDataUpdate(double speed, double rpm, double coolantTemp, double fuelLevel, 
@@ -50,6 +58,7 @@ public class HttpService {
         this.mainHandler = new Handler(Looper.getMainLooper());
         this.executorService = Executors.newSingleThreadExecutor();
         this.serverUrl = "http://" + ESP32_IP + ":" + ESP32_PORT + DATA_ENDPOINT;
+        this.dataStructureUrl = "http://" + ESP32_IP + ":" + ESP32_PORT + DATA_STRUCTURE_ENDPOINT;
         initializeHttpService();
     }
     
@@ -60,7 +69,53 @@ public class HttpService {
     private void initializeHttpService() {
         updateStatus(false, "HTTP Service ready");
         EventManager.getInstance().addHttpEvent("Service initialized", "STATUS");
+        loadDataStructure();
         connectToServer();
+    }
+    
+    private void loadDataStructure() {
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    URL url = new URL(dataStructureUrl);
+                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                    connection.setRequestMethod("GET");
+                    connection.setConnectTimeout(5000);
+                    connection.setReadTimeout(10000);
+                    
+                    int responseCode = connection.getResponseCode();
+                    
+                    if (responseCode == HttpURLConnection.HTTP_OK) {
+                        InputStream inputStream = connection.getInputStream();
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+                        
+                        StringBuilder response = new StringBuilder();
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            response.append(line);
+                        }
+                        
+                        reader.close();
+                        inputStream.close();
+                        
+                        dataStructure = new JSONObject(response.toString());
+                        dataStructureLoaded = true;
+                        
+                        EventManager.getInstance().addHttpEvent("Data structure loaded", "STATUS");
+                        Log.d(TAG, "Data structure loaded successfully");
+                    } else {
+                        throw new IOException("HTTP response code: " + responseCode);
+                    }
+                    
+                    connection.disconnect();
+                    
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to load data structure", e);
+                    EventManager.getInstance().addHttpEvent("Data structure load failed", "ERROR");
+                }
+            }
+        });
     }
     
     public void connectToServer() {
@@ -137,6 +192,11 @@ public class HttpService {
     }
     
     private void pollForData() throws IOException {
+        if (!dataStructureLoaded) {
+            Log.w(TAG, "Data structure not loaded, skipping data poll");
+            return;
+        }
+        
         long startTime = System.currentTimeMillis();
         
         URL url = new URL(serverUrl);
@@ -159,19 +219,13 @@ public class HttpService {
             
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 InputStream inputStream = connection.getInputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-                
-                StringBuilder response = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    response.append(line);
-                }
-                
-                reader.close();
+                byte[] binaryData = new byte[64]; // Max expected size
+                int bytesRead = inputStream.read(binaryData);
                 inputStream.close();
                 
-                String jsonData = response.toString();
-                parseIncomingData(jsonData);
+                if (bytesRead > 0) {
+                    parseBinaryData(binaryData, bytesRead);
+                }
                 
             } else {
                 throw new IOException("HTTP response code: " + responseCode);
@@ -182,29 +236,40 @@ public class HttpService {
         }
     }
     
-    private void parseIncomingData(String data) {
-        if (data.isEmpty()) return;
-        
+    private void parseBinaryData(byte[] data, int length) {
         try {
-            JSONObject json = new JSONObject(data);
+            // Parse data dynamically using the loaded data structure
+            double speed = 0.0;
+            double rpm = 0.0; // ESP32 doesn't send RPM
+            double coolantTemp = 0.0;
+            double fuelLevel = 0.0;
+            boolean oilWarning = false;
+            double batteryVoltage = 0.0;
+            boolean drlOn = false;
+            boolean lowBeamOn = false;
+            boolean highBeamOn = false;
+            boolean leftTurnSignal = false;
+            boolean rightTurnSignal = false;
+            boolean hazardLights = false;
+            boolean reverseGear = false;
+            String location = "";
             
-            // Parse all fields with default values for missing keys
-            double speed = json.optDouble("speed", 0.0);
-            double rpm = json.optDouble("rpm", 0.0); // ESP32 doesn't send RPM, default to 0
-            double coolantTemp = json.optDouble("coolantTemp", 0.0);
-            double fuelLevel = json.optDouble("fuelLevel", 0.0);
-            boolean oilWarning = json.optBoolean("oilWarning", false);
-            double batteryVoltage = json.optDouble("batteryVoltage", 0.0);
-            boolean drlOn = json.optBoolean("drlOn", false);
-            boolean lowBeamOn = json.optBoolean("lowBeamOn", false);
-            boolean highBeamOn = json.optBoolean("highBeamOn", false);
-            boolean leftTurnSignal = json.optBoolean("leftTurnSignal", false);
-            boolean rightTurnSignal = json.optBoolean("rightTurnSignal", false);
-            boolean hazardLights = json.optBoolean("hazardLights", false);
-            boolean reverseGear = json.optBoolean("reverseGear", false);
-            String location = json.optString("location", "");
-            
-            // Data received and parsed successfully - no logging of individual data values
+            // Parse each field dynamically based on the data structure
+            if (dataStructure != null) {
+                speed = parseFieldByType(data, "speed");
+                coolantTemp = parseFieldByType(data, "coolantTemp");
+                fuelLevel = parseFieldByType(data, "fuelLevel");
+                batteryVoltage = parseFieldByType(data, "batteryVoltage");
+                oilWarning = parseFieldByType(data, "oilWarning");
+                drlOn = parseFieldByType(data, "drlOn");
+                lowBeamOn = parseFieldByType(data, "lowBeamOn");
+                highBeamOn = parseFieldByType(data, "highBeamOn");
+                leftTurnSignal = parseFieldByType(data, "leftTurnSignal");
+                rightTurnSignal = parseFieldByType(data, "rightTurnSignal");
+                hazardLights = parseFieldByType(data, "hazardLights");
+                reverseGear = parseFieldByType(data, "reverseGear");
+                location = parseFieldByType(data, "location");
+            }
             
             // Update UI on main thread
             if (dataListener != null) {
@@ -233,9 +298,65 @@ public class HttpService {
                 });
             }
             
-        } catch (JSONException e) {
-            Log.e(TAG, "Failed to parse JSON data: " + data, e);
-            EventManager.getInstance().addHttpEvent("JSON parse error", "ERROR");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to parse binary data", e);
+            EventManager.getInstance().addHttpEvent("Binary data parse error", "ERROR");
+        }
+    }
+    
+    @SuppressWarnings("unchecked")
+    private <T> T parseFieldByType(byte[] data, String fieldName) {
+        try {
+            if (dataStructure == null || !dataStructure.has(fieldName)) {
+                return (T) getDefaultValue(fieldName);
+            }
+            
+            JSONObject fieldInfo = dataStructure.getJSONObject(fieldName);
+            String type = fieldInfo.getString("type");
+            int position = fieldInfo.getInt("position");
+            int size = fieldInfo.getInt("size");
+            int scale = fieldInfo.optInt("scale", 1); // Default scale is 1 if not specified
+            
+            if ("int".equals(type)) {
+                int value = ByteBuffer.wrap(data, position, size).order(ByteOrder.LITTLE_ENDIAN).getInt();
+                return (T) Double.valueOf((double) value / scale);
+            } else if ("bool".equals(type)) {
+                // For boolean fields, we need to check the bit position within the byte
+                int byteIndex = position / 8;
+                int bitPosition = position % 8;
+                
+                if (byteIndex < data.length) {
+                    int boolFlags = data[byteIndex] & 0xFF;
+                    boolean value = (boolFlags & (1 << bitPosition)) != 0;
+                    return (T) Boolean.valueOf(value);
+                }
+            } else if ("string".equals(type)) {
+                if (position + size <= data.length) {
+                    String result = new String(data, position, size).trim();
+                    if (result.endsWith("\0")) {
+                        result = result.substring(0, result.indexOf("\0"));
+                    }
+                    return (T) result;
+                }
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to parse field: " + fieldName, e);
+        }
+        
+        return (T) getDefaultValue(fieldName);
+    }
+    
+    private Object getDefaultValue(String fieldName) {
+        // Return appropriate default values based on field name
+        if ("location".equals(fieldName)) {
+            return "";
+        } else if (fieldName.contains("On") || fieldName.contains("Signal") || 
+                   fieldName.contains("Lights") || fieldName.contains("Gear") || 
+                   fieldName.contains("Warning")) {
+            return false;
+        } else {
+            return 0.0;
         }
     }
     
@@ -278,7 +399,9 @@ public class HttpService {
     
     public void setServerUrl(String ip, int port) {
         this.serverUrl = "http://" + ip + ":" + port + DATA_ENDPOINT;
+        this.dataStructureUrl = "http://" + ip + ":" + port + DATA_STRUCTURE_ENDPOINT;
         Log.d(TAG, "Server URL updated to: " + this.serverUrl);
+        Log.d(TAG, "Data structure URL updated to: " + this.dataStructureUrl);
     }
     
     public void cleanup() {
